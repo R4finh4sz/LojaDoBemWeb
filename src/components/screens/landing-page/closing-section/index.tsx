@@ -31,11 +31,11 @@ export function ClosingSection({
             </p>
             <div className="mt-6">
               <ButtonLink
-                href="/login"
+                href="Auth/Login"
                 variant="secondary"
                 className="px-4 py-2.5"
               >
-                Login de admin
+                Login
               </ButtonLink>
             </div>
           </div>

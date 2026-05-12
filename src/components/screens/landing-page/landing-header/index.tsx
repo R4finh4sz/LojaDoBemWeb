@@ -49,7 +49,7 @@ export function LandingHeader({ logo, navItems }: LandingHeaderProps) {
           ))}
         </nav>
 
-        <ButtonLink href="/login" variant="secondary" className="px-4 py-2.5">
+        <ButtonLink href="/Auth/Login" variant="secondary" className="px-4 py-2.5">
           Login
         </ButtonLink>
       </div>

@@ -79,7 +79,7 @@ export default function Home() {
             kicker="Economia circular na prática"
             title="Reciclagem que vira valor real para pessoas e cidades."
             description="O ReciclaOnline conecta moradores, pontos de coleta e administradores para transformar resíduos em ecocoins, pontos que podem ser trocados por alimentos e itens cadastrados pelos responsáveis do sistema."
-            primaryAction={{ href: "/login", label: "Acessar painel de admin" }}
+            primaryAction={{ href: "/Auth/Login", label: "Acessar painel de admin" }}
             secondaryAction={{
               href: "#como-funciona",
               label: "Ver como funciona",

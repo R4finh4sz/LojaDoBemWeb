@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import logoImage from "@/assets/Images/LogoImage.png";
 
-export function LoginPage() {
+export const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -48,12 +48,11 @@ export function LoginPage() {
         </a>
       </header>
 
-      {/* Main */}
       <main className="flex flex-1 items-center justify-center px-6 py-12">
         <div className="w-full max-w-md">
-          {/* Card */}
+          
           <div className="rounded-3xl bg-white px-8 py-10 shadow-xl shadow-emerald-600/10 ring-1 ring-emerald-100/60">
-            {/* Icon + Title */}
+            
             <div className="mb-8 flex flex-col items-center text-center">
               <div className="mb-4 flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg shadow-emerald-600/25 ring-1 ring-emerald-100">
                 <Image
@@ -64,15 +63,14 @@ export function LoginPage() {
                   className="h-full w-full object-cover"
                 />
               </div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-800">
+              <h1 className="text-2xl mb-4 font-bold tracking-tight text-slate-800">
                 Bem-vindo de volta
               </h1>
-              <p className="mt-1 text-sm text-slate-500">
-                Entre na sua conta para continuar reciclando
+              <p className="text-sm text-slate-500">
+                Entre na sua conta para continuar gerindo o ReciclaOnline e fomentar a reciclagem na sua cidade.
               </p>
             </div>
 
-            {/* Form */}
             <div className="space-y-5">
               <div>
                 <label
@@ -150,31 +148,11 @@ export function LoginPage() {
               </button>
             </div>
 
-            <div className="my-6 flex items-center gap-3">
-              <div className="h-px flex-1 bg-slate-100" />
-              <span className="text-xs text-slate-400">ou continue com</span>
-              <div className="h-px flex-1 bg-slate-100" />
-            </div>
+          
 
-            <p className="mt-6 text-center text-sm text-slate-500">
-              Ainda não tem uma conta?{" "}
-              <a
-                href="/register"
-                className="font-semibold text-emerald-600 transition hover:text-emerald-800"
-              >
-                Criar conta grátis
-              </a>
-            </p>
           </div>
 
-          <div className="mt-6 flex items-center justify-center">
-            <span className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs ring-1 ring-emerald-100">
-              🪙{" "}
-              <span className="font-medium text-emerald-700">
-                Ganhe ecocoins ao reciclar
-              </span>
-            </span>
-          </div>
+         
         </div>
       </main>
     </div>
