@@ -16,7 +16,7 @@ export function LandingHeader({ logo, navItems }: LandingHeaderProps) {
   return (
     <header className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-6 sm:px-10 lg:px-12">
       <div className="flex items-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg shadow-emerald-600/25 ring-1 ring-emerald-100">
+        <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg shadow-emerald-600/25 ring-1 ring-emerald-100">
           <Image
             src={logo}
             alt="Logo do ReciclaOnline"
