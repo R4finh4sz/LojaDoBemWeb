@@ -51,11 +51,11 @@ export const ForgotPasswordPage = () => {
 
   const handleStep2Submit = async (data: ForgotPasswordCodeInput) => {
     setLoading(true);
+    setSuccessMessage("");
 
     await new Promise((r) => setTimeout(r, 1500));
     setLoading(false);
 
-    setSuccessMessage("Código verificado com sucesso");
     setTimeout(() => setStep(3), 1500);
   };
 
@@ -91,13 +91,17 @@ export const ForgotPasswordPage = () => {
   };
 
   useEffect(() => {
-    if (successMessage && (step === 1 || step === 2)) {
+    if (successMessage && step === 1) {
       const timer = setTimeout(() => {
         setSuccessMessage("");
       }, 10000);
       return () => clearTimeout(timer);
     }
   }, [successMessage, step]);
+
+  useEffect(() => {
+    setSuccessMessage("");
+  }, [step]);
 
   return (
     <div className="relative min-h-screen overflow-hidden text-slate-900 flex flex-col">
@@ -121,7 +125,7 @@ export const ForgotPasswordPage = () => {
                           ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/40"
                           : s < step
                             ? "bg-emerald-100 text-emerald-700"
-                            : "bg-slate-100 text-slate-500"
+                            : "bg-slate-100 text-slate-500 opacity-40"
                       }`}
                     >
                       {s < step ? (
@@ -224,7 +228,9 @@ export const ForgotPasswordPage = () => {
                       const value = e.target.value
                         .replace(/\D/g, "")
                         .slice(0, 6);
-                      codeForm.setValue("code", value);
+                      codeForm.setValue("code", value, {
+                        shouldValidate: true,
+                      });
                     }}
                   />
                   <p className="mt-3 text-center text-xs text-slate-500">
@@ -284,7 +290,7 @@ export const ForgotPasswordPage = () => {
                     error={passwordForm.formState.errors.confirmPassword}
                   />
 
-                  <p className="text-xs text-slate-600">
+                  <div className="text-xs text-slate-600">
                     A senha deve conter:
                     <ul className="mt-2 space-y-1">
                       <li
@@ -308,7 +314,7 @@ export const ForgotPasswordPage = () => {
                         • Números
                       </li>
                     </ul>
-                  </p>
+                  </div>
 
                   <div className="flex gap-3 pt-4">
                     <button
