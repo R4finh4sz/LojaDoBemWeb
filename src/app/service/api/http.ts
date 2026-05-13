@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const http = axios.create({
-  baseURL: "https://reciclaonline.com.br/api/",
+  baseURL: "https://coral-app-xzr8d.ondigitalocean.app/api/",
 });
 
 const maskSensitiveFields = (value: unknown): unknown => {
