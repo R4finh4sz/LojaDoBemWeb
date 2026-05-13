@@ -1,12 +1,10 @@
-"use client";
-
-import { useSearchParams } from "next/navigation";
-import VerifyCode from "@/components/screens/verify-code";
+import { Suspense } from "react";
+import VerifyCodeContent from "./verify-code-content";
 
 export default function VerifyCodePage() {
-  const params = useSearchParams();
-  const email = params?.get("email") || "";
-  const challengeId = params?.get("challengeId") || "";
-
-  return <VerifyCode email={email} challengeId={challengeId} />;
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <VerifyCodeContent />
+    </Suspense>
+  );
 }
