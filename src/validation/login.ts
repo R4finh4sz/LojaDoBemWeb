@@ -6,6 +6,7 @@ export const loginSchema = z.object({
     .email("Insira um e-mail válido")
     .min(1, "E-mail é obrigatório"),
   password: z.string().min(1, "Senha é obrigatória"),
+  rememberMe: z.boolean().optional().default(false),
 });
 
-export type LoginInput = z.infer<typeof loginSchema>;
+export type LoginInput = z.input<typeof loginSchema>;

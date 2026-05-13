@@ -1,31 +1,93 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
 
 import logoImage from "@/assets/Images/LogoImage.png";
 import { AuthHeader } from "@/components/ui/auth-header";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { FormInput } from "@/components/ui/form-input";
 import { loginSchema, type LoginInput } from "@/validation/login";
+import { authService } from "@/app/service/api/authService";
+import { useGlobalModalStore } from "@/stores/useGlobalModalStore";
+import { CheckSquare, Square } from "lucide-react";
 
 export const LoginPage = () => {
   const [loading, setLoading] = useState(false);
+  const [loginLocked, setLoginLocked] = useState(false);
 
   const {
     register,
     handleSubmit,
+    setValue,
+    control,
     formState: { errors, isValid },
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
     mode: "onChange",
   });
 
+  const router = useRouter();
+  const showError = useGlobalModalStore((state) => state.showError);
+  const remember =
+    useWatch({ control, name: "rememberMe", defaultValue: false }) ?? false;
+
   const onSubmit = async (data: LoginInput) => {
+    if (loginLocked) {
+      showError(
+        "Sua conta está temporariamente bloqueada devido a muitas tentativas falhas. Tente novamente em 15 minutos.",
+      );
+      return;
+    }
+
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    setLoading(false);
+    try {
+      const resp = await authService.login({
+        email: data.email,
+        password: data.password,
+        rememberMe: data.rememberMe ?? false,
+      });
+
+      if (resp?.data?.requiresTwoFactor) {
+        const challengeId = resp.data.challengeId;
+        router.push(
+          `/Auth/VerifyCode?email=${encodeURIComponent(data.email)}&challengeId=${encodeURIComponent(challengeId || "")}`,
+        );
+        return;
+      }
+
+      const roleId = resp?.data?.user?.role?.id;
+      if (roleId === 4) {
+        router.replace("/Master");
+      } else if (roleId === 5) {
+        router.replace("/Admin");
+      } else {
+        showError("Acesso não autorizado para este usuário.");
+      }
+    } catch (err: unknown) {
+      console.error(err);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const anyErr = err as any;
+      const backendMessage =
+        anyErr?.response?.data?.message ||
+        anyErr?.response?.data?.error ||
+        anyErr?.message;
+
+      const status = anyErr?.response?.status;
+      if (status === 429) {
+        setLoginLocked(true);
+      }
+
+      showError(
+        backendMessage && typeof backendMessage === "string"
+          ? backendMessage
+          : "Credenciais inválidas.",
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -78,11 +140,25 @@ export const LoginPage = () => {
                   placeholder="••••••••"
                   error={errors.password}
                 />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setValue("rememberMe", !remember, { shouldDirty: true })
+                  }
+                  className="mt-3 flex items-center gap-2 text-sm text-slate-600"
+                >
+                  {remember ? (
+                    <CheckSquare className="text-emerald-600" size={20} />
+                  ) : (
+                    <Square className="text-slate-400" size={20} />
+                  )}
+                  <span>Lembrar-me</span>
+                </button>
               </div>
 
               <button
                 type="submit"
-                disabled={loading || !isValid}
+                disabled={loading || !isValid || loginLocked}
                 className="mt-2 w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-md shadow-emerald-600/30 transition hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-600/40 active:scale-[0.98] disabled:opacity-60"
               >
                 {loading ? (
@@ -95,6 +171,13 @@ export const LoginPage = () => {
                   "Entrar"
                 )}
               </button>
+
+              {loginLocked && (
+                <p className="text-center text-sm font-medium text-red-600">
+                  Sua conta está temporariamente bloqueada devido a muitas
+                  tentativas falhas. Tente novamente em 15 minutos.
+                </p>
+              )}
             </form>
           </div>
         </div>
