@@ -27,10 +27,10 @@ export function LandingHeader({ logo, navItems }: LandingHeaderProps) {
           />
         </div>
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-700">
+          <p className="text-lg font-semibold uppercase text-emerald-700">
             ReciclaOnline
           </p>
-          <p className="text-sm font-normal text-slate-600">
+          <p className="text-base font-normal text-slate-600">
             Troca de recicláveis por ecocoins
           </p>
         </div>
@@ -49,7 +49,11 @@ export function LandingHeader({ logo, navItems }: LandingHeaderProps) {
           ))}
         </nav>
 
-        <ButtonLink href="/Auth/Login" variant="secondary" className="px-4 py-2.5">
+        <ButtonLink
+          href="/Auth/Login"
+          variant="secondary"
+          className="px-4 py-2.5"
+        >
           Login
         </ButtonLink>
       </div>

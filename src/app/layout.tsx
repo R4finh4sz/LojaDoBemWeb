@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ReciclaOnline | Ecocoins por reciclagem",
+  title: "ReciclaOnline",
   description:
     "Landing page do ReciclaOnline, aplicativo para trocar recicláveis por ecocoins e recompensas.",
 };
