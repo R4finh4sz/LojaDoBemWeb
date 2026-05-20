@@ -7,7 +7,7 @@ import AuthGuard from "@/components/ui/auth-guard";
 
 export const AdminHome = () => {
   return (
-    <AuthGuard title="Painel do Administrador">
+    <AuthGuard title="Painel do Administrador" allowedRoles={5}>
       <div className="min-h-screen bg-gray-50 p-8 text-slate-800">
         <header className="mb-8 flex items-center gap-4">
           <div className="h-12 w-12 overflow-hidden rounded-xl bg-white shadow">

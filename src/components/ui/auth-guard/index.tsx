@@ -2,9 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  clearAuthSession,
+  getRoleHomePath,
+  getStoredRoleId,
+  isAllowedRole,
+  isJwtValid,
+} from "@/app/service/api/auth-session";
 
 type AuthGuardProps = {
   children: React.ReactNode;
+  allowedRoles?: number | number[];
   redirectTo?: string;
   title?: string;
   message?: string;
@@ -15,6 +23,7 @@ const defaultMessage = "Você precisa estar logado para acessar esta página.";
 export const AuthGuard = ({
   children,
   redirectTo = "/Auth/Login",
+  allowedRoles,
   title = "Acesso restrito",
   message = defaultMessage,
 }: AuthGuardProps) => {
@@ -25,16 +34,26 @@ export const AuthGuard = ({
   useEffect(() => {
     try {
       const accessToken = window.localStorage.getItem("accessToken");
-      const allowed = Boolean(accessToken);
+      const validToken = isJwtValid(accessToken);
+
+      if (!validToken) {
+        clearAuthSession();
+        setHasAccess(false);
+        router.replace(redirectTo);
+        return;
+      }
+
+      const roleId = getStoredRoleId();
+      const allowed = isAllowedRole(allowedRoles, roleId);
       setHasAccess(allowed);
 
       if (!allowed) {
-        router.replace(redirectTo);
+        router.replace(getRoleHomePath(roleId));
       }
     } finally {
       setIsChecking(false);
     }
-  }, [redirectTo, router]);
+  }, [allowedRoles, redirectTo, router]);
 
   if (isChecking) {
     return (
