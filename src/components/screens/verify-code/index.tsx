@@ -6,6 +6,11 @@ import verifiedImage from "@/assets/Images/Verified.png";
 import { authService } from "@/app/service/api/authService";
 import { useRouter } from "next/navigation";
 import { useGlobalModalStore } from "@/stores/useGlobalModalStore";
+import {
+  getRoleHomePath,
+  isJwtValid,
+  storeAuthSession,
+} from "@/app/service/api/auth-session";
 
 interface Props {
   email: string;
@@ -156,18 +161,31 @@ export const VerifyCode = ({ email, challengeId }: Props) => {
                     code: joinedCode,
                     challengeId,
                   });
-                  const accessToken = resp?.data?.accessToken;
+                  const jwt = resp?.data?.jwt;
                   const roleId = resp?.data?.user?.role?.id;
-                  if (accessToken) {
-                    try {
-                      localStorage.setItem("accessToken", accessToken);
-                    } catch {
-                      // ignore
-                    }
+                  const userDisplayName =
+                    resp?.data?.user?.nome ??
+                    resp?.data?.user?.name ??
+                    resp?.data?.user?.username;
+
+                  if (!jwt || !isJwtValid(jwt)) {
+                    showError("O servidor não retornou um JWT válido.");
+                    return;
                   }
-                  if (roleId === 4) router.push("/Admin");
-                  else if (roleId === 5) router.push("/Master");
-                  else showError("Acesso não autorizado para este usuário.");
+
+                  storeAuthSession({
+                    jwt,
+                    roleId,
+                    userName: userDisplayName,
+                    userEmail: email,
+                  });
+
+                  if (roleId === 4 || roleId === 5) {
+                    router.push(getRoleHomePath(roleId));
+                    return;
+                  }
+
+                  showError("Acesso não autorizado para este usuário.");
                 } catch {
                   showError("Código inválido ou expirado.");
                 } finally {

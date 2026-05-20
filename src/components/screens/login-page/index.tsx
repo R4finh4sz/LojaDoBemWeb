@@ -13,6 +13,11 @@ import { loginSchema, type LoginInput } from "@/validation/login";
 import { authService } from "@/app/service/api/authService";
 import { useGlobalModalStore } from "@/stores/useGlobalModalStore";
 import { CheckSquare, Square } from "lucide-react";
+import {
+  getRoleHomePath,
+  isJwtValid,
+  storeAuthSession,
+} from "@/app/service/api/auth-session";
 
 export const LoginPage = () => {
   const [loading, setLoading] = useState(false);
@@ -50,6 +55,18 @@ export const LoginPage = () => {
         rememberMe: data.rememberMe ?? false,
       });
 
+      const jwt = resp?.data?.jwt;
+      const roleId = resp?.data?.user?.role?.id;
+      const userName =
+        resp?.data?.user?.nome ??
+        resp?.data?.user?.name ??
+        resp?.data?.user?.username;
+      const userEmail = resp?.data?.user?.email ?? data.email;
+
+      if (jwt && isJwtValid(jwt)) {
+        storeAuthSession({ jwt, roleId, userName, userEmail });
+      }
+
       if (resp?.data?.requiresTwoFactor) {
         const challengeId = resp.data.challengeId;
         router.push(
@@ -58,11 +75,8 @@ export const LoginPage = () => {
         return;
       }
 
-      const roleId = resp?.data?.user?.role?.id;
-      if (roleId === 4) {
-        router.replace("/Master");
-      } else if (roleId === 5) {
-        router.replace("/Admin");
+      if (roleId === 4 || roleId === 5) {
+        router.replace(getRoleHomePath(roleId));
       } else {
         showError("Acesso não autorizado para este usuário.");
       }

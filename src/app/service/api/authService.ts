@@ -6,20 +6,32 @@ type LoginForm = {
   rememberMe: boolean;
 };
 
+type AuthUser = {
+  id?: number;
+  email?: string;
+  nome?: string;
+  name?: string;
+  username?: string;
+  avatarUrl?: string;
+  photoUrl?: string;
+  role?: { id?: number };
+};
+
 type LoginResponse = {
   data: {
+    jwt?: string;
     requiresTwoFactor?: boolean;
     challengeId?: string;
-    user?: { role?: { id?: number } };
+    user?: AuthUser;
   };
   message?: string;
 };
 
 type VerifyResponse = {
   data: {
-    accessToken?: string;
+    jwt?: string;
     refreshToken?: string;
-    user?: { role?: { id?: number } };
+    user?: AuthUser;
   };
   message?: string;
 };
@@ -31,7 +43,10 @@ export const authService = {
       password: form.password,
       rememberMe: form.rememberMe,
     };
-    const { data } = await http.post<LoginResponse>(`auth/local`, payload);
+    const { data } = await http.post<LoginResponse>(
+      `master/auth/local`,
+      payload,
+    );
     return data;
   },
 
