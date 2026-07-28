@@ -122,6 +122,15 @@ export const getStoredAvatarUrl = (): string | null => {
   return window.localStorage.getItem(USER_AVATAR_KEY);
 };
 
+export const setStoredAvatarUrl = (avatarUrl: string) => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(USER_AVATAR_KEY, avatarUrl);
+  window.dispatchEvent(new Event("profile-updated"));
+};
+
 export const getStoredUserEmail = (): string | null => {
   if (typeof window === "undefined") {
     return null;

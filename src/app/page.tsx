@@ -68,8 +68,8 @@ const closingBullets = [
 
 export default function Home() {
   return (
-    <main className="relative overflow-hidden text-slate-900">
-      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(34,197,94,0.18),transparent_35%),radial-gradient(circle_at_20%_20%,rgba(16,185,129,0.12),transparent_28%),radial-gradient(circle_at_80%_10%,rgba(6,95,70,0.12),transparent_22%)]" />
+    <main className="relative min-h-screen overflow-hidden bg-[#f7fbf8] text-slate-900 dark:bg-[#07100b] dark:text-slate-100">
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(34,197,94,0.18),transparent_35%),radial-gradient(circle_at_20%_20%,rgba(16,185,129,0.12),transparent_28%)] dark:bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.10),transparent_34%)]" />
 
       <LandingHeader logo={logoImage} navItems={navItems} />
 

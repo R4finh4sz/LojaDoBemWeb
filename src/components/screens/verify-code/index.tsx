@@ -90,7 +90,7 @@ export const VerifyCode = ({ email, challengeId }: Props) => {
 
   if (!hasFlowData) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-6 text-slate-800">
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-6 text-slate-800 dark:bg-[#07100b] dark:text-slate-100">
         <div className="text-center">
           <p className="text-sm font-medium uppercase tracking-[0.25em] text-emerald-600">
             Acesso restrito
@@ -104,8 +104,8 @@ export const VerifyCode = ({ email, challengeId }: Props) => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow">
+    <div className="min-h-screen flex items-center justify-center bg-[#f7fbf8] p-6 dark:bg-[#07100b]">
+      <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow dark:bg-slate-900 dark:ring-1 dark:ring-slate-700">
         <h2 className="mb-2 text-center text-2xl font-semibold text-slate-600">
           Verificação de código
         </h2>

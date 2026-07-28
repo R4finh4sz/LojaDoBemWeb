@@ -104,8 +104,8 @@ export const ForgotPasswordPage = () => {
   }, [step]);
 
   return (
-    <div className="relative min-h-screen overflow-hidden text-slate-900 flex flex-col">
-      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(34,197,94,0.18),transparent_35%),radial-gradient(circle_at_20%_20%,rgba(16,185,129,0.12),transparent_28%),radial-gradient(circle_at_80%_10%,rgba(6,95,70,0.12),transparent_22%)]" />
+    <div className="relative min-h-screen overflow-hidden bg-[#f7fbf8] text-slate-900 dark:bg-[#07100b] dark:text-slate-100 flex flex-col">
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(34,197,94,0.18),transparent_35%),radial-gradient(circle_at_20%_20%,rgba(16,185,129,0.12),transparent_28%)] dark:bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.10),transparent_38%)]" />
       <AuthHeader
         logo={logoImage}
         backHref="/Auth/Login"
@@ -114,7 +114,7 @@ export const ForgotPasswordPage = () => {
 
       <main className="flex flex-1 items-center justify-center px-6 py-12">
         <div className="w-full max-w-lg">
-          <div className="rounded-3xl bg-white px-12 py-14 shadow-2xl shadow-emerald-600/20 ring-1 ring-emerald-100/80">
+          <div className="rounded-3xl bg-white px-12 py-14 shadow-2xl shadow-emerald-600/20 ring-1 ring-emerald-100/80 dark:bg-slate-900 dark:ring-slate-700">
             <div className="mb-8 flex items-center justify-center">
               <div className="flex items-center gap-0 max-w-sm">
                 {[1, 2, 3].map((s) => (

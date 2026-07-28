@@ -1,109 +1,110 @@
 "use client";
 
+import { Controller, useForm } from "react-hook-form";
 import { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { FormInput } from "@/components/ui/form-input";
+import { inputMasks } from "@/utils/input-masks";
+import { newAdminSchema, type NewAdminInput } from "@/validation/new-admin";
 import { useGlobalModalStore } from "@/stores/useGlobalModalStore";
+import { viaCepService } from "@/app/service/api/viaCepService";
 
-const initialForm = {
-  nome: "Joao Silva",
-  email: "spgustavorisio@gmail.com",
-  password: "SenhaForte@123",
-  confirmPassword: "SenhaForte@123",
-  cpf: "44823456874",
-  dataNascimento: "1990-01-15",
-  endereco: "Rua A",
-  numero: "123",
-  complemento: "Apto 10",
-  imagemUrl: "https://exemplo.com/imagem.jpg",
-  cep: "12345-678",
-  cidade: "Sao Paulo",
-  estado: "SP",
-  telefone: "11999999999",
+const defaults: NewAdminInput = {
+  nome: "", responsavel: "", cnpj: "", email: "", password: "", confirmPassword: "", cpf: "",
+  dataNascimento: "", endereco: "", bairro: "", numero: "", complemento: "",
+  cep: "", cidade: "", estado: "", telefone: "",
+};
+
+const fields: { name: keyof NewAdminInput; label: string; type?: string; placeholder?: string }[] = [
+  { name: "nome", label: "Nome completo", placeholder: "Nome e sobrenome" },
+  { name: "responsavel", label: "Responsável pelo login", placeholder: "Nome e sobrenome" },
+  { name: "cnpj", label: "CNPJ vinculado", placeholder: "00.000.000/0000-00" },
+  { name: "email", label: "E-mail", type: "email", placeholder: "nome@exemplo.com" },
+  { name: "password", label: "Senha", type: "password", placeholder: "Mínimo de 8 caracteres" },
+  { name: "confirmPassword", label: "Confirmar senha", type: "password" },
+  { name: "cpf", label: "CPF", placeholder: "000.000.000-00" },
+  { name: "dataNascimento", label: "Data de nascimento", placeholder: "DD/MM/AAAA" },
+  { name: "cep", label: "CEP", placeholder: "00000-000" },
+  { name: "endereco", label: "Endereço" },
+  { name: "bairro", label: "Bairro" },
+  { name: "numero", label: "Número" },
+  { name: "complemento", label: "Complemento" },
+  { name: "cidade", label: "Cidade" },
+  { name: "estado", label: "Estado", placeholder: "SP" },
+  { name: "telefone", label: "Telefone", placeholder: "(00) 00000-0000" },
+];
+
+const maskFor = (name: keyof NewAdminInput, value: string) => {
+  if (name === "cpf") return inputMasks.cpf(value);
+  if (name === "cnpj") return inputMasks.cnpj(value);
+  if (name === "dataNascimento") return inputMasks.birthDate(value);
+  if (name === "cep") return inputMasks.cep(value);
+  if (name === "telefone") return inputMasks.phone(value);
+  if (name === "estado") return value.replace(/[^a-z]/gi, "").slice(0, 2).toUpperCase();
+  return value;
 };
 
 export const MasterNewAdminPage = () => {
-  const [form, setForm] = useState(initialForm);
-  const showError = useGlobalModalStore((state) => state.showError);
+  const [loadingCep, setLoadingCep] = useState(false);
+  const [cepResolved, setCepResolved] = useState(false);
+  const showSuccess = useGlobalModalStore((state) => state.showSuccess);
+  const { control, handleSubmit, setValue, setError, clearErrors, formState: { errors, isSubmitting } } = useForm<NewAdminInput>({
+    resolver: zodResolver(newAdminSchema), mode: "onBlur", defaultValues: defaults,
+  });
 
-  const updateField = (field: keyof typeof initialForm, value: string) => {
-    setForm((current) => ({ ...current, [field]: value }));
-  };
+  const onSubmit = () => showSuccess("Cadastro validado e pronto para ser enviado ao backend.");
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (form.password !== form.confirmPassword) {
-      showError("As senhas não conferem.");
+  const findCep = async (cep: string) => {
+    if (cep.replace(/\D/g, "").length !== 8) {
+      setCepResolved(false);
       return;
     }
-
-    showError(
-      "Cadastro preparado para integração com o endpoint de criação de administrador.",
-    );
+    setLoadingCep(true);
+    setCepResolved(false);
+    clearErrors("cep");
+    try {
+      const address = await viaCepService.findAddress(cep);
+      setValue("endereco", address.logradouro, { shouldValidate: true });
+      setValue("bairro", address.bairro, { shouldValidate: true });
+      setValue("cidade", address.localidade, { shouldValidate: true });
+      setValue("estado", address.uf, { shouldValidate: true });
+      setCepResolved(true);
+    } catch (error) {
+      setError("cep", { message: error instanceof Error ? error.message : "Erro ao consultar o CEP." });
+    } finally {
+      setLoadingCep(false);
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="rounded-4xl border border-emerald-100 bg-white/95 p-6 shadow-[0_18px_50px_rgba(16,185,129,0.07)]">
-        <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-600">
-          Novo administrador
-        </p>
-        <h3 className="mt-2 text-2xl font-semibold text-slate-900">
-          Cadastro completo
-        </h3>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
-          Preencha os dados abaixo com o formato solicitado para cadastrar um
-          novo administrador.
-        </p>
-      </div>
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
+      <header className="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.14)]">
+        <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-700">Novo administrador</p>
+        <h3 className="mt-2 text-3xl font-bold text-slate-900">Cadastro completo</h3>
+        <p className="mt-2 text-sm leading-6 text-slate-600">Os formatos são aplicados durante a digitação e todos os dados são validados antes do envio.</p>
+      </header>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {[
-          ["nome", "Nome completo"],
-          ["email", "E-mail"],
-          ["password", "Senha"],
-          ["confirmPassword", "Confirmar senha"],
-          ["cpf", "CPF"],
-          ["dataNascimento", "Data de nascimento"],
-          ["endereco", "Endereço"],
-          ["numero", "Número"],
-          ["complemento", "Complemento"],
-          ["imagemUrl", "Imagem URL"],
-          ["cep", "CEP"],
-          ["cidade", "Cidade"],
-          ["estado", "Estado"],
-          ["telefone", "Telefone"],
-        ].map(([field, label]) => (
-          <label
-            key={field}
-            className="block rounded-3xl border border-emerald-100 bg-white p-4 shadow-sm"
-          >
-            <span className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-              {label}
-            </span>
-            <input
-              value={form[field as keyof typeof initialForm]}
-              onChange={(event) =>
-                updateField(
-                  field as keyof typeof initialForm,
-                  event.target.value,
-                )
-              }
-              type={
-                field === "password" || field === "confirmPassword"
-                  ? "password"
-                  : "text"
-              }
-              className="mt-3 w-full rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:bg-white"
-              placeholder={label}
-            />
-          </label>
+      <section className="grid gap-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.14)] md:grid-cols-2">
+        {fields.map(({ name, label, type = "text", placeholder }) => (
+          <Controller key={name} name={name} control={control} render={({ field }) => (
+            <FormInput {...field} value={field.value ?? ""} onChange={(event) => {
+              field.onChange(maskFor(name, event.target.value));
+              if (name === "cep") setCepResolved(false);
+            }}
+              onBlur={() => { field.onBlur(); if (name === "cep") void findCep(String(field.value)); }}
+              disabled={["endereco", "bairro", "numero", "complemento", "cidade", "estado"].includes(name) && !cepResolved}
+              id={name} label={name === "cep" && loadingCep ? "CEP · consultando..." : label} type={type} placeholder={placeholder ?? label} error={errors[name]} className="bg-white shadow-[0_5px_14px_rgba(15,23,42,0.08)]" />
+          )} />
         ))}
-      </div>
+        {!cepResolved && (
+          <p className="-mt-2 text-sm text-slate-500 md:col-span-2">
+            Informe um CEP válido para liberar os campos do endereço.
+          </p>
+        )}
+      </section>
 
-      <button
-        type="submit"
-        className="rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/25 transition hover:bg-emerald-700"
-      >
+      <button type="submit" disabled={isSubmitting}
+        className="rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(5,150,105,0.35)] transition hover:bg-emerald-700 disabled:opacity-60">
         Cadastrar administrador
       </button>
     </form>

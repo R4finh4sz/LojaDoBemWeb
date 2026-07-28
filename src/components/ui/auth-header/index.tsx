@@ -2,6 +2,7 @@
 
 import Image, { type StaticImageData } from "next/image";
 import { BackLink } from "@/components/ui/back-link";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 interface AuthHeaderProps {
   logo: StaticImageData;
@@ -25,6 +26,7 @@ export const AuthHeader = ({
             height={64}
             className="h-full w-full object-cover"
             priority
+            unoptimized
           />
         </div>
         <div>
@@ -36,7 +38,10 @@ export const AuthHeader = ({
           </p>
         </div>
       </div>
-      <BackLink href={backHref} label={backLabel} />
+      <div className="flex items-center gap-3">
+        <ThemeToggle />
+        <BackLink href={backHref} label={backLabel} />
+      </div>
     </header>
   );
 };

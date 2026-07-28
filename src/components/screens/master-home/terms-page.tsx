@@ -1,49 +1,16 @@
 "use client";
 
-const termsSections = [
-  {
-    title: "Uso da plataforma",
-    text: "O Master tem acesso a ferramentas administrativas, auditoria e revisão de conteúdo. Todo uso deve respeitar a política interna e os papéis definidos.",
-  },
-  {
-    title: "Dados pessoais",
-    text: "As informações exibidas no perfil e no cadastro de administradores devem ser tratadas como dados sensíveis e mantidas sob controle da equipe autorizada.",
-  },
-  {
-    title: "Auditoria",
-    text: "A atividade do Master, alterações de perfil, novos cadastros e operações críticas podem ser registradas para fins de segurança e conformidade.",
-  },
-];
-
-export const MasterTermsPage = () => {
-  return (
-    <section className="space-y-6">
-      <div className="rounded-4xl border border-emerald-100 bg-white/95 p-6 shadow-[0_18px_50px_rgba(16,185,129,0.07)]">
-        <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-600">
-          Termos de uso
-        </p>
-        <h3 className="mt-2 text-2xl font-semibold text-slate-900">
-          Regras da área Master
-        </h3>
-      </div>
-
-      <div className="grid gap-4">
-        {termsSections.map((section) => (
-          <article
-            key={section.title}
-            className="rounded-3xl border border-emerald-100 bg-emerald-50/60 p-6 shadow-[0_12px_32px_rgba(16,185,129,0.05)]"
-          >
-            <h4 className="text-lg font-semibold text-slate-900">
-              {section.title}
-            </h4>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              {section.text}
-            </p>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-};
+export const MasterTermsPage = () => (
+  <section className="rounded-3xl border border-slate-200 bg-white p-7 shadow-[0_18px_48px_rgba(15,23,42,0.14)] sm:p-10">
+    <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-700">Termos de uso</p>
+    <h3 className="mt-2 text-3xl font-bold text-slate-900">Regras da área Master</h3>
+    <div className="mt-7 max-w-4xl text-base leading-8 text-slate-700">
+      <p>
+        O acesso à área Master do ReciclaOnline é destinado exclusivamente a pessoas autorizadas e deve ser utilizado para administração, auditoria e manutenção da plataforma. As informações pessoais, registros operacionais e dados de administradores devem ser tratados de forma confidencial e somente para as finalidades previstas. As ações realizadas nesta área, incluindo acessos, alterações de perfil, cadastros e operações de segurança, podem ser registradas para auditoria e conformidade. Ao continuar utilizando a plataforma, o usuário declara estar ciente de suas responsabilidades e concorda em preservar a integridade, a disponibilidade e a segurança dos serviços.
+      </p>
+    </div>
+    <p className="mt-8 border-t border-slate-200 pt-5 text-sm text-slate-500">Última atualização: 21 de julho de 2026</p>
+  </section>
+);
 
 export default MasterTermsPage;

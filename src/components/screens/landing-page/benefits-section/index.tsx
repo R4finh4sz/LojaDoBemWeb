@@ -24,8 +24,8 @@ export function BenefitsSection({ id, cards }: BenefitsSectionProps) {
             key={card.kicker}
             className={
               card.tone === "accent"
-                ? "rounded-4xl border border-emerald-100 bg-emerald-600 p-7 text-white shadow-[0_18px_60px_-40px_rgba(22,163,74,0.8)]"
-                : "rounded-4xl border border-emerald-100 bg-white p-7 shadow-[0_18px_60px_-40px_rgba(15,23,42,0.45)]"
+                ? "rounded-4xl border border-emerald-500 bg-emerald-600 p-7 text-white shadow-[0_18px_60px_-40px_rgba(22,163,74,0.8)] dark:border-emerald-700 dark:bg-emerald-800"
+                : "rounded-4xl border border-emerald-100 bg-white p-7 shadow-[0_18px_60px_-40px_rgba(15,23,42,0.45)] dark:border-slate-700 dark:bg-slate-900"
             }
           >
             <SectionKicker>{card.kicker}</SectionKicker>
@@ -33,7 +33,7 @@ export function BenefitsSection({ id, cards }: BenefitsSectionProps) {
               className={
                 card.tone === "accent"
                   ? "mt-5 text-2xl font-medium"
-                  : "mt-5 text-2xl font-medium text-emerald-950"
+                  : "mt-5 text-2xl font-medium text-emerald-950 dark:text-emerald-50"
               }
             >
               {card.title}

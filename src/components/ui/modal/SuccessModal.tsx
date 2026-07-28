@@ -25,7 +25,8 @@ export const SuccessModal = ({
           <Image src={successIcon} alt="Sucesso" width={40} height={40} />
         </div>
 
-        <h3 className="text-xl font-semibold">{title}</h3>
+
+        <h3 className="text-xl font-semibold text-slate-800">{title}</h3>
         <p className="text-sm text-slate-600">{message}</p>
 
         <button

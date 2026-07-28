@@ -15,7 +15,7 @@ export const BackLink = ({
   return (
     <Link
       href={href}
-      className="flex items-center gap-2 text-lg font-medium text-slate-600 transition hover:text-emerald-800"
+      className="flex items-center gap-2 text-lg font-medium text-slate-600 transition hover:text-emerald-800 dark:text-slate-300 dark:hover:text-emerald-300"
     >
       <Icon className="h-4 w-4" />
       {label}

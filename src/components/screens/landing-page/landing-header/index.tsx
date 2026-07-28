@@ -1,6 +1,7 @@
 import Image, { type StaticImageData } from "next/image";
 
 import { ButtonLink } from "@/components/ui/button-link/index";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 type NavItem = {
   label: string;
@@ -24,6 +25,7 @@ export function LandingHeader({ logo, navItems }: LandingHeaderProps) {
             height={44}
             className="h-full w-full object-cover"
             priority
+            unoptimized
           />
         </div>
         <div>
@@ -56,6 +58,7 @@ export function LandingHeader({ logo, navItems }: LandingHeaderProps) {
         >
           Login
         </ButtonLink>
+        <ThemeToggle />
       </div>
     </header>
   );

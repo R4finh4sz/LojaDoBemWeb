@@ -4,6 +4,8 @@
 @import "@fontsource/poppins/600.css";
 @import "@fontsource/poppins/700.css";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -36,7 +38,91 @@ body {
   font-family: "Poppins", sans-serif;
 }
 
+html.dark body {
+  background: #020617;
+  color: #e2e8f0;
+}
+
+html.dark .bg-white,
+html.dark .bg-white\/95,
+html.dark .bg-white\/85,
+html.dark .bg-white\/75 {
+  background-color: #0f172a;
+}
+
+html.dark .bg-slate-50,
+html.dark .bg-emerald-50,
+html.dark .bg-emerald-50\/70,
+html.dark .bg-emerald-50\/60 {
+  background-color: #1e293b;
+}
+
+html.dark .text-slate-950,
+html.dark .text-slate-900,
+html.dark .text-slate-800,
+html.dark .text-slate-700 {
+  color: #f1f5f9;
+}
+
+html.dark .text-slate-600,
+html.dark .text-slate-500,
+html.dark .text-slate-400 {
+  color: #cbd5e1;
+}
+
+html.dark .border-slate-200,
+html.dark .border-emerald-100 {
+  border-color: #334155;
+}
+
 ::selection {
   background: rgba(22, 163, 74, 0.18);
   color: #14532d;
+}
+
+.product-workspace {
+  --workspace-ink: #101814;
+  --workspace-muted: #66716b;
+  --workspace-line: #dfe5e1;
+  --workspace-paper: #f6f8f6;
+  --workspace-accent: #087a4b;
+  background: var(--workspace-paper);
+  color: var(--workspace-ink);
+}
+
+.product-workspace .editorial-surface {
+  background: #fff;
+  border: 1px solid var(--workspace-line);
+  box-shadow: none;
+}
+
+.product-workspace .editorial-label {
+  color: var(--workspace-accent);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.product-workspace .editorial-reveal {
+  animation: editorial-reveal 420ms cubic-bezier(.2,.75,.25,1) both;
+}
+
+html.dark .product-workspace {
+  --workspace-ink: #f1f5f2;
+  --workspace-muted: #a8b2ac;
+  --workspace-line: #29352e;
+  --workspace-paper: #09100c;
+  --workspace-accent: #5ee09a;
+}
+
+html.dark .product-workspace .editorial-surface { background: #101914; }
+
+@keyframes editorial-reveal {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-workspace .editorial-reveal { animation: none; }
 }

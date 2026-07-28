@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Menu, Shield, UserCircle2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { LogOut, Menu, Shield } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import {
   clearAuthSession,
   getStoredAvatarUrl,
   getStoredUserName,
 } from "@/app/service/api/auth-session";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import ErrorModal from "@/components/ui/modal/ErrorModal";
 
 type MasterShellProps = {
   children: React.ReactNode;
@@ -34,8 +36,15 @@ export const MasterShell = ({ children }: MasterShellProps) => {
   const router = useRouter();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
   const userName = getStoredUserName() ?? "Master";
-  const avatarUrl = getStoredAvatarUrl();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(() => getStoredAvatarUrl());
+
+  useEffect(() => {
+    const refreshAvatar = () => setAvatarUrl(getStoredAvatarUrl());
+    window.addEventListener("profile-updated", refreshAvatar);
+    return () => window.removeEventListener("profile-updated", refreshAvatar);
+  }, []);
 
   const initials = useMemo(() => getInitials(userName), [userName]);
 
@@ -45,11 +54,11 @@ export const MasterShell = ({ children }: MasterShellProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.12),transparent_30%),linear-gradient(180deg,#f0fff8_0%,#e8f8f1_42%,#f8fafc_100%)] text-slate-900">
-      <div className="mx-auto flex min-h-screen w-full max-w-[1600px] flex-col lg:flex-row">
-        <aside className="border-b border-emerald-100/80 bg-white/85 px-5 py-5 backdrop-blur-xl lg:min-h-screen lg:w-80 lg:border-b-0 lg:border-r lg:px-6">
+    <div className="product-workspace min-h-screen text-slate-900 dark:text-slate-100">
+      <div className="flex min-h-screen w-full flex-col lg:flex-row">
+        <aside className="editorial-surface border-x-0 border-t-0 px-5 py-5 lg:sticky lg:top-0 lg:min-h-screen lg:w-72 lg:self-start lg:border-b-0 lg:border-r lg:px-6">
           <div className="flex items-center justify-between lg:justify-start lg:gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/25">
+            <div className="flex h-11 w-11 items-center justify-center bg-emerald-700 text-white">
               <Shield size={22} />
             </div>
             <div>
@@ -79,10 +88,10 @@ export const MasterShell = ({ children }: MasterShellProps) => {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`rounded-2xl px-4 py-3 text-sm font-medium transition ${
+                  className={`border-l-2 px-4 py-3 text-sm font-medium transition ${
                     active
-                      ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
-                      : "bg-emerald-50 text-slate-600 hover:bg-emerald-100 hover:text-emerald-800"
+                      ? "border-emerald-700 bg-emerald-50 text-emerald-900 dark:bg-slate-800 dark:text-emerald-300"
+                      : "border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-950"
                   }`}
                 >
                   {item.label}
@@ -91,7 +100,7 @@ export const MasterShell = ({ children }: MasterShellProps) => {
             })}
           </nav>
 
-          <div className="mt-8 rounded-3xl border border-emerald-100 bg-emerald-50 p-5 text-slate-800 shadow-[0_14px_40px_rgba(16,185,129,0.08)]">
+          <div className="mt-8 border-t border-slate-200 pt-6 text-slate-800">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-300">
               Status
             </p>
@@ -105,20 +114,22 @@ export const MasterShell = ({ children }: MasterShellProps) => {
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-20 border-b border-white/70 bg-white/85 px-5 py-4 backdrop-blur-xl lg:px-8">
+          <header className="editorial-surface sticky top-0 z-20 border-x-0 border-t-0 px-5 py-4 lg:px-10">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-medium uppercase tracking-[0.24em] text-emerald-600">
-                  Painel do Master
+                  Controle da plataforma
                 </p>
                 <h2 className="mt-1 text-2xl font-semibold text-slate-900">
-                  Gestão avançada da plataforma
+                  Operação Master
                 </h2>
               </div>
 
+              <div className="flex items-center gap-3">
+              <ThemeToggle />
               <Link
                 href="/main/Master/profile"
-                className="group flex items-center gap-3 self-start rounded-full border border-slate-200 bg-white px-3 py-2 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                className="group flex items-center gap-3 self-start bg-transparent px-1 py-1 transition"
               >
                 <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-sm font-bold text-white">
                   {avatarUrl ? (
@@ -141,21 +152,31 @@ export const MasterShell = ({ children }: MasterShellProps) => {
                   </p>
                 </div>
               </Link>
+              </div>
             </div>
           </header>
 
-          <main className="flex-1 px-5 py-6 lg:px-8 lg:py-8">{children}</main>
+          <main className="flex-1 px-5 py-7 lg:px-10 lg:py-10">{children}</main>
         </div>
       </div>
 
       <button
         type="button"
-        onClick={handleLogout}
-        className="fixed bottom-5 right-5 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-2xl shadow-emerald-600/25 transition hover:bg-emerald-700"
+        onClick={() => setLogoutOpen(true)}
+        className="rounded-3xl fixed bottom-5 right-5 inline-flex items-center gap-2 bg-emerald-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-800"
       >
         <LogOut size={16} />
         Sair
       </button>
+      <ErrorModal
+        open={logoutOpen}
+        title="Sair da conta?"
+        message="Tem certeza que deseja encerrar sua sessão?"
+        closeLabel="Cancelar"
+        confirmLabel="Sair"
+        onClose={() => setLogoutOpen(false)}
+        onConfirm={handleLogout}
+      />
     </div>
   );
 };

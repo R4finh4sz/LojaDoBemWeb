@@ -11,8 +11,8 @@ const variantClasses = {
   primary:
     "bg-emerald-600 text-white shadow-[0_18px_45px_-22px_rgba(22,163,74,0.8)] hover:bg-emerald-500",
   secondary:
-    "border border-emerald-200 bg-white/90 text-emerald-900 hover:border-emerald-300 hover:bg-emerald-50",
-  ghost: "text-emerald-950 hover:bg-emerald-950/5 hover:text-emerald-800",
+    "border border-emerald-200 bg-white/90 text-emerald-900 hover:border-emerald-300 hover:bg-emerald-50 dark:border-slate-700 dark:bg-slate-900 dark:text-emerald-200 dark:hover:bg-slate-800",
+  ghost: "text-emerald-950 hover:bg-emerald-950/5 hover:text-emerald-800 dark:text-emerald-200 dark:hover:bg-white/5 dark:hover:text-emerald-100",
 } as const;
 
 export function ButtonLink({

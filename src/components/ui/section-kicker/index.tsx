@@ -4,7 +4,7 @@ type SectionKickerProps = {
 
 export function SectionKicker({ children }: SectionKickerProps) {
   return (
-    <span className="inline-flex items-center rounded-full border border-emerald-200 bg-white/85 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-700 shadow-sm backdrop-blur-sm">
+    <span className="inline-flex items-center rounded-full border border-emerald-200 bg-white/85 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-700 shadow-sm backdrop-blur-sm dark:border-emerald-900 dark:bg-slate-900/85 dark:text-emerald-300">
       {children}
     </span>
   );

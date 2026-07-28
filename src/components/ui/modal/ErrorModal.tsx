@@ -12,6 +12,7 @@ interface Props {
   message?: string;
   closeLabel?: string;
   confirmLabel?: string;
+  title?: string;
 }
 
 export const ErrorModal = ({
@@ -21,8 +22,8 @@ export const ErrorModal = ({
   message,
   closeLabel = "Fechar",
   confirmLabel = "Sim",
+  title = "Erro!",
 }: Props) => {
-  const title = "Erro!";
   const displayMessage = message ?? "Ocorreu um erro. Tente novamente.";
   return (
     <Modal open={open} onClose={onClose}>

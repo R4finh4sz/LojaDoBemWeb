@@ -29,29 +29,31 @@ export const FormInput = ({
           {label}
         </label>
       )}
-      {isPasswordField ? (
-        <button
-          type="button"
-          onClick={() => setShowPassword((current) => !current)}
-          aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-          className={`absolute right-4 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full transition ${
-            showPassword
-              ? "text-emerald-600 hover:bg-emerald-50"
-              : "text-slate-400 hover:bg-slate-100"
-          }`}
-        >
-          {showPassword ? <EyeOff size={21} /> : <Eye size={21} />}
-        </button>
-      ) : null}
-      <input
-        {...props}
-        type={inputType}
-        className={`w-full rounded-xl border px-4 py-3 text-sm text-slate-800 placeholder-slate-400 outline-none transition ${
-          error
-            ? "border-red-400 bg-red-50 focus:border-red-400 focus:bg-white focus:ring-2 focus:ring-red-400/20"
-            : "border-slate-200 bg-slate-50 focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-400/20"
-        } ${isPasswordField ? "pr-14" : ""} ${className || ""}`}
-      />
+      <div className="relative">
+        <input
+          {...props}
+          type={inputType}
+          className={`w-full rounded-xl border px-4 py-3 text-sm text-slate-800 placeholder-slate-400 outline-none transition ${
+            error
+              ? "border-red-400 bg-red-50 focus:border-red-400 focus:bg-white focus:ring-2 focus:ring-red-400/20"
+              : "border-slate-200 bg-slate-50 focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-400/20"
+          } ${isPasswordField ? "pr-14" : ""} disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400 disabled:opacity-45 disabled:shadow-none ${className || ""}`}
+        />
+        {isPasswordField ? (
+          <button
+            type="button"
+            onClick={() => setShowPassword((current) => !current)}
+            aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+            className={`absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full transition ${
+              showPassword
+                ? "text-emerald-600 hover:bg-emerald-50"
+                : "text-slate-400 hover:bg-slate-100"
+            }`}
+          >
+            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+          </button>
+        ) : null}
+      </div>
       {error && (
         <p className="mt-1.5 mb-3 text-xs text-red-600">{error.message}</p>
       )}
