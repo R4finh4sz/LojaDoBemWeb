@@ -70,9 +70,8 @@ export const ProfilePage = ({ roleLabel = "Master" }: ProfilePageProps) => {
               <img src={preview} alt="Prévia do perfil" className="h-full w-full object-cover" />
             ) : <UserCircle2 size={42} />}
           </div>
-          <div><p className="text-sm font-bold uppercase tracking-[0.2em] text-emerald-700">Perfil {roleLabel}</p><h3 className="mt-1 text-2xl font-bold">{userName}</h3><p className="text-sm text-slate-500">{userEmail}</p></div>
+          <div><p className="text-sm font-bold uppercase tracking-[0.2em] text-emerald-700">Perfil {roleLabel}</p><h3 className="mt-1 text-2xl font-bold">{userName}</h3></div>
         </div>
-        <button onClick={() => setLogoutOpen(true)} className="flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white"><LogOut size={16} /> Sair</button>
       </header>
 
       <div className="grid gap-6 lg:grid-cols-[250px_1fr]">
