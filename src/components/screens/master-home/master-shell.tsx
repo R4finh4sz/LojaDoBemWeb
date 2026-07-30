@@ -99,18 +99,6 @@ export const MasterShell = ({ children }: MasterShellProps) => {
               );
             })}
           </nav>
-
-          <div className="mt-8 border-t border-slate-200 pt-6 text-slate-800">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-300">
-              Status
-            </p>
-            <p className="mt-3 text-lg font-semibold text-slate-900">
-              Operação ativa
-            </p>
-            <p className="mt-2 text-sm text-slate-600">
-              Logs e cadastros estão sendo monitorados em tempo real.
-            </p>
-          </div>
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
