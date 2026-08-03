@@ -1,7 +1,7 @@
-import MasterTermsPage from "@/components/screens/master-home/terms-page";
+import MasterTermsPage from "@/components/screens/master/terms";
 
 export const metadata = {
-  title: "Termos de uso - ReciclaOnline",
+  title: "Cadastrar termos - ReciclaOnline",
 };
 
 export default function TermsPage() {
