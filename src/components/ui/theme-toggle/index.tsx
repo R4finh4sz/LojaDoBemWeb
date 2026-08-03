@@ -5,7 +5,9 @@ import { useEffect, useState } from "react";
 
 const THEME_KEY = "recicla-theme";
 
-export const ThemeToggle = () => {
+type ThemeToggleProps = { compact?: boolean };
+
+export const ThemeToggle = ({ compact = false }: ThemeToggleProps) => {
   const [dark, setDark] = useState(false);
 
   useEffect(() => {
@@ -25,9 +27,9 @@ export const ThemeToggle = () => {
 
   return (
     <button type="button" onClick={toggle} aria-label={dark ? "Ativar modo claro" : "Ativar modo noturno"}
-      className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-md transition hover:-translate-y-0.5 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+      className={`inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 ${compact ? "w-10 px-0" : "px-3"}`}>
       {dark ? <Sun size={18} /> : <Moon size={18} />}
-      <span className="hidden sm:inline">{dark ? "Modo claro" : "Modo noturno"}</span>
+      {!compact && <span className="hidden sm:inline">{dark ? "Modo claro" : "Modo noturno"}</span>}
     </button>
   );
 };

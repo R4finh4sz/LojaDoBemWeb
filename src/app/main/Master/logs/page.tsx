@@ -1,4 +1,4 @@
-import MasterLogsPage from "@/components/screens/master-home/logs-page";
+import MasterLogsPage from "@/components/screens/master/logs";
 
 export const metadata = {
   title: "Logs do Master - ReciclaOnline",

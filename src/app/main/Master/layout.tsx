@@ -1,4 +1,4 @@
-import MasterShell from "@/components/screens/master-home/master-shell";
+import MasterShell from "@/components/screens/master/shell";
 import AuthGuard from "@/components/ui/auth-guard";
 
 export default function MasterLayout({

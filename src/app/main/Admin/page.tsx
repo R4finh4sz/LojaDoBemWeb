@@ -1,4 +1,4 @@
-import AdminHome from "@/components/screens/admin-home";
+import AdminHome from "@/components/screens/admin/home";
 
 export const metadata = {
   title: "Admin - ReciclaOnline",

@@ -1,21 +1,25 @@
-"use client";
+﻿"use client";
 /* eslint-disable @next/next/no-img-element */
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { ArrowLeft, BarChart3, BookOpen, Camera, CheckCircle2, ClipboardCheck, Coins, Gift, LogOut, Menu, PackagePlus, Pencil, Recycle, Search, Shield, UserCircle2, Users } from "lucide-react";
+import { ArrowLeft, BarChart3, Camera, CheckCircle2, ChevronLeft, ChevronRight, ClipboardCheck, Coins, Gift, LogOut, Menu, PackagePlus, Pencil, Recycle, Search, ShoppingBag, UserCircle2, UserPlus, Users } from "lucide-react";
 import AuthGuard from "@/components/ui/auth-guard";
 import { clearAuthSession, getStoredAvatarUrl, getStoredUserName } from "@/app/service/api/auth-session";
 import { FormInput } from "@/components/ui/form-input";
 import { useGlobalModalStore } from "@/stores/useGlobalModalStore";
 import { editItemSchema, itemSchema, type EditItemInput, type ItemInput } from "@/validation/admin-items";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { ProfilePage } from "@/components/screens/master-home/profile-page";
+import { ProfilePage } from "@/components/screens/shared/profile";
 import ErrorModal from "@/components/ui/modal/ErrorModal";
+import { CitizenRegistration } from "@/components/screens/admin/citizen-registration";
+import { AdminStore } from "@/components/screens/admin/store";
+import reciclaLogo from "@/assets/Images/LogoImage.png";
 
-type AdminTab = "overview" | "points" | "items" | "catalog" | "withdrawal" | "profile" | "terms";
+type AdminTab = "overview" | "citizen" | "store" | "points" | "items" | "catalog" | "withdrawal" | "profile";
 type Product = { code: string; name: string; points: number; image: string; customer: string };
 type Account = { id: string; name: string; emailHint: string; balance: number };
 type PointsReceipt = { account: Account; amount: number; reason: string; protocol: string };
@@ -45,18 +49,19 @@ const catalogItems = [
 
 const tabs = [
   { id: "overview", label: "Visão geral", icon: BarChart3 },
-  { id: "points", label: "Adicionar ecocoins", icon: Coins },
+  { id: "citizen", label: "Cadastrar munícipe", icon: UserPlus },
+  { id: "store", label: "Loja", icon: ShoppingBag },
+  { id: "points", label: "Adicionar Ecocoin", icon: Coins },
   { id: "items", label: "Cadastrar item", icon: PackagePlus },
-  { id: "catalog", label: "Itens cadastrados", icon: Pencil },
+  { id: "catalog", label: "Editar itens", icon: Pencil },
   { id: "withdrawal", label: "Confirmar retirada", icon: ClipboardCheck },
-  { id: "profile", label: "Perfil", icon: UserCircle2 },
-  { id: "terms", label: "Termos de uso", icon: BookOpen },
 ] satisfies { id: AdminTab; label: string; icon: typeof BarChart3 }[];
 
 export const AdminHome = () => {
   const router = useRouter();
   const [tab, setTab] = useState<AdminTab>("overview");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [photo, setPhoto] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState("");
@@ -79,6 +84,7 @@ export const AdminHome = () => {
   const adminName = getStoredUserName() ?? "Administrador";
   const [avatarUrl, setAvatarUrl] = useState<string | null>(() => getStoredAvatarUrl());
   const initials = useMemo(() => adminName.split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("") || "A", [adminName]);
+  const currentTabLabel = tab === "profile" ? "Perfil" : tabs.find((item) => item.id === tab)?.label ?? "Visão geral";
 
   useEffect(() => {
     const refreshAvatar = () => setAvatarUrl(getStoredAvatarUrl());
@@ -143,24 +149,27 @@ export const AdminHome = () => {
     <AuthGuard title="Painel do Administrador" allowedRoles={5}>
       <div className="product-workspace min-h-screen text-slate-900 dark:text-slate-100">
         <div className="flex min-h-screen w-full flex-col lg:flex-row">
-          <aside className="editorial-surface border-x-0 border-t-0 px-5 py-5 lg:sticky lg:top-0 lg:min-h-screen lg:w-72 lg:self-start lg:border-b-0 lg:border-r lg:px-6">
+          <aside className={`editorial-surface overflow-hidden border-x-0 border-t-0 px-5 py-5 transition-[width,padding] duration-300 ease-out lg:sticky lg:top-0 lg:min-h-screen lg:self-start lg:border-b-0 lg:border-r ${sidebarCollapsed ? "lg:w-20 lg:px-3" : "lg:w-72 lg:px-6"}`}>
             <div className="flex items-center justify-between lg:justify-start lg:gap-3">
-              <div className="flex h-11 w-11 items-center justify-center bg-emerald-700 text-white"><Shield size={22} /></div>
-              <div><p className="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-600">Área Admin</p><h1 className="text-xl font-semibold text-slate-900">ReciclaOnline</h1></div>
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white p-0.5 shadow-sm ring-1 ring-emerald-100"><Image src={reciclaLogo} alt="Logo ReciclaOnline" className="h-full w-full object-contain" priority /></div>
+              <div className={`overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-200 ${sidebarCollapsed ? "lg:max-w-0 lg:opacity-0" : "lg:max-w-44 lg:opacity-100"}`}><p className="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-600">Área Admin</p><h1 className="text-xl font-semibold text-slate-900">ReciclaOnline</h1></div>
               <button type="button" onClick={() => setMenuOpen((value) => !value)} className="ml-auto inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 lg:hidden" aria-label="Abrir menu"><Menu size={18} /></button>
             </div>
             <nav className={`${menuOpen ? "mt-6 flex" : "mt-6 hidden lg:flex"} flex-col gap-2`}>
-              {tabs.map(({ id, label, icon: Icon }) => <button key={id} onClick={() => { setTab(id); setMenuOpen(false); }} className={`flex w-full items-center gap-3 border-l-2 px-4 py-3 text-left text-sm font-medium transition ${tab === id ? "border-emerald-700 bg-emerald-50 text-emerald-900 dark:bg-slate-800 dark:text-emerald-300" : "border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-950"}`}><Icon size={17} />{label}</button>)}
+              {tabs.map(({ id, label, icon: Icon }) => <button key={id} title={sidebarCollapsed ? label : undefined} aria-label={label} onClick={() => { setTab(id); setMenuOpen(false); }} className={`flex w-full items-center overflow-hidden border-l-2 py-3 text-left text-sm font-medium transition ${sidebarCollapsed ? "lg:justify-center lg:px-2" : "gap-3 px-4"} ${tab === id ? "border-emerald-700 bg-emerald-50 text-emerald-900 dark:bg-slate-800 dark:text-emerald-300" : "border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-950"}`}><Icon className="shrink-0" size={18} /><span className={`whitespace-nowrap transition-[max-width,opacity] duration-200 ${sidebarCollapsed ? "lg:max-w-0 lg:opacity-0" : "lg:max-w-52 lg:opacity-100"}`}>{label}</span></button>)}
+              <div className="my-2 border-t border-slate-200" />
+              <button title={sidebarCollapsed ? "Perfil" : undefined} aria-label="Perfil" onClick={() => { setTab("profile"); setMenuOpen(false); }} className={`flex w-full items-center overflow-hidden border-l-2 py-3 text-left text-sm font-medium transition ${sidebarCollapsed ? "lg:justify-center lg:px-2" : "gap-3 px-4"} ${tab === "profile" ? "border-emerald-700 bg-emerald-50 text-emerald-900 dark:bg-slate-800 dark:text-emerald-300" : "border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-950"}`}><UserCircle2 className="shrink-0" size={18} /><span className={`whitespace-nowrap transition-[max-width,opacity] duration-200 ${sidebarCollapsed ? "lg:max-w-0 lg:opacity-0" : "lg:max-w-52 lg:opacity-100"}`}>Perfil</span></button>
+              <button type="button" onClick={() => setSidebarCollapsed((value) => !value)} title={sidebarCollapsed ? "Expandir menu" : "Recolher menu"} aria-label={sidebarCollapsed ? "Expandir menu lateral" : "Recolher menu lateral"} className="mt-3 hidden h-10 w-full shrink-0 items-center justify-center gap-2 overflow-hidden rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-500 transition hover:bg-slate-50 hover:text-slate-900 lg:flex">{sidebarCollapsed ? <ChevronRight size={18} /> : <><ChevronLeft className="shrink-0" size={18} /><span className="whitespace-nowrap">Recolher menu</span></>}</button>
             </nav>
           </aside>
 
           <div className="flex min-w-0 flex-1 flex-col">
-            <header className="editorial-surface sticky top-0 z-20 border-x-0 border-t-0 px-5 py-4 lg:px-10">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div><p className="text-sm font-medium uppercase tracking-[0.24em] text-emerald-600">Controle da plataforma</p><h2 className="mt-1 text-2xl font-semibold text-slate-900">Operação Administrativa</h2></div>
-                <div className="flex items-center gap-3"><ThemeToggle /><button type="button" onClick={() => setTab("profile")} className="group flex items-center gap-3 px-1 py-1">
-                  <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-sm font-bold text-white">{avatarUrl ? <img src={avatarUrl} alt={adminName} className="h-full w-full object-cover" /> : <span>{initials}</span>}</div>
-                  <div className="text-left"><p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-600">Administrador</p><p className="text-sm font-semibold text-slate-900 group-hover:text-emerald-700">{adminName}</p></div>
+            <header className="editorial-surface border-x-0 border-t-0 px-5 py-3 lg:px-8">
+              <div className="flex items-center justify-between gap-4">
+                <h2 className="min-w-0 truncate text-lg font-semibold text-slate-900">{currentTabLabel}</h2>
+                <div className="flex items-center gap-2"><ThemeToggle compact /><button type="button" onClick={() => setTab("profile")} className="group flex items-center gap-2 rounded-xl px-1.5 py-1 transition hover:bg-slate-50">
+                  <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-sm font-bold text-white">{avatarUrl ? <img src={avatarUrl} alt={adminName} className="h-full w-full object-cover" /> : <span>{initials}</span>}</div>
+                  <div className="hidden text-left sm:block"><p className="text-sm font-semibold leading-tight text-slate-900 group-hover:text-emerald-700">{adminName}</p><p className="mt-0.5 text-xs text-slate-500">Administrador</p></div>
                 </button></div>
               </div>
             </header>
@@ -177,6 +186,10 @@ export const AdminHome = () => {
               <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_16px_42px_rgba(15,23,42,0.14)]"><h3 className="text-xl font-bold">Itens mais retirados</h3><div className="mt-6 space-y-5">{[["Ecobag retornável", 86], ["Garrafa térmica", 68], ["Kit de canudos", 51]].map(([name, percentage], index) => <div key={String(name)}><div className="flex justify-between text-sm"><strong>{index + 1}. {name}</strong><span className="text-slate-500">{percentage}%</span></div><div className="mt-2 h-2 rounded-full bg-slate-100"><div className="h-full rounded-full bg-emerald-500" style={{ width: `${percentage}%` }} /></div></div>)}</div></article>
             </section>
           </div>}
+
+          {tab === "citizen" && <CitizenRegistration />}
+
+          {tab === "store" && <AdminStore operatorName={adminName} />}
 
           {tab === "points" && <section className="mt-6 grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
             <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_16px_42px_rgba(15,23,42,0.14)] sm:p-8">
@@ -229,8 +242,6 @@ export const AdminHome = () => {
           </section>}
 
           {tab === "profile" && <ProfilePage roleLabel="Administrador" />}
-
-          {tab === "terms" && <article className="mt-6 rounded-3xl border border-slate-200 bg-white p-7 shadow-[0_16px_42px_rgba(15,23,42,0.14)] sm:p-10"><p className="text-sm font-bold uppercase tracking-[0.2em] text-emerald-700">Termos de uso</p><h3 className="mt-2 text-3xl font-bold">Regras da área administrativa</h3><p className="mt-7 max-w-4xl text-base leading-8 text-slate-700">O acesso administrativo ao ReciclaOnline é pessoal e destinado exclusivamente à operação autorizada da plataforma. O administrador é responsável pela conferência dos pedidos, confirmação das retiradas, cadastro correto dos itens e proteção das informações dos usuários. Toda retirada deve ser validada pelo código apresentado pelo cliente, e as ações realizadas podem ser registradas para auditoria, segurança e conformidade. Ao utilizar esta área, o administrador concorda em manter a confidencialidade dos dados e seguir os procedimentos operacionais da organização.</p><p className="mt-8 border-t border-slate-200 pt-5 text-sm text-slate-500">Última atualização: 21 de julho de 2026</p></article>}
 
               </div>
             </main>

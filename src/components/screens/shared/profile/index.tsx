@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, Clock3, KeyRound, LogOut, Settings2, UserCircle2, UserRoundPen } from "lucide-react";
+import { BookOpen, Camera, Clock3, KeyRound, Settings2, UserCircle2, UserRoundPen } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { clearAuthSession, getStoredAvatarUrl, getStoredUserEmail, getStoredUserName, setStoredAvatarUrl } from "@/app/service/api/auth-session";
@@ -13,7 +13,7 @@ import { changePasswordSchema, profileDataSchema, type ChangePasswordInput, type
 import ErrorModal from "@/components/ui/modal/ErrorModal";
 import { inputMasks } from "@/utils/input-masks";
 
-type ProfileTab = "access" | "password" | "data" | "preferences";
+type ProfileTab = "access" | "password" | "data" | "preferences" | "terms";
 const tabs = [
   { id: "access", label: "Histórico de acesso", icon: Clock3 },
   { id: "password", label: "Alterar senha", icon: KeyRound },
@@ -40,6 +40,7 @@ export const ProfilePage = ({ roleLabel = "Master" }: ProfilePageProps) => {
   const showSuccess = useGlobalModalStore((state) => state.showSuccess);
   const userName = getStoredUserName() ?? roleLabel;
   const userEmail = getStoredUserEmail() ?? (roleLabel === "Master" ? "master@reciclaonline.com" : "admin@reciclaonline.com");
+  const profileTabs = [...tabs, { id: "terms" as const, label: "Termos de uso", icon: BookOpen }];
   const { register, handleSubmit, reset, formState: { errors } } = useForm<ChangePasswordInput>({ resolver: zodResolver(changePasswordSchema) });
   const dataForm = useForm<ProfileDataInput>({
     resolver: zodResolver(profileDataSchema),
@@ -76,7 +77,7 @@ export const ProfilePage = ({ roleLabel = "Master" }: ProfilePageProps) => {
 
       <div className="grid gap-6 lg:grid-cols-[250px_1fr]">
         <nav className="h-fit rounded-3xl border border-slate-200 bg-white p-3 shadow-[0_18px_48px_rgba(15,23,42,0.14)]">
-          {tabs.map(({ id, label, icon: Icon }) => <button key={id} onClick={() => setTab(id)} className={`mb-2 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold last:mb-0 ${tab === id ? "bg-emerald-600 text-white shadow-md" : "text-slate-600 hover:bg-slate-100"}`}><Icon size={18} />{label}</button>)}
+          {profileTabs.map(({ id, label, icon: Icon }) => <button key={id} onClick={() => setTab(id)} className={`mb-2 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold last:mb-0 ${tab === id ? "bg-emerald-600 text-white shadow-md" : "text-slate-600 hover:bg-slate-100"}`}><Icon size={18} />{label}</button>)}
         </nav>
 
         <article className="min-h-[430px] rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.14)] sm:p-8">
@@ -118,6 +119,8 @@ export const ProfilePage = ({ roleLabel = "Master" }: ProfilePageProps) => {
           )}
 
           {tab === "preferences" && <div><h4 className="text-2xl font-bold">Preferências da conta</h4><p className="mt-2 text-sm text-slate-600">Personalize notificações e a exibição do painel.</p><div className="mt-6 max-w-2xl space-y-3">{[["security", "Alertas de segurança", "Receber avisos sobre acessos e bloqueios."], ["reports", "Resumo semanal", "Receber o resumo operacional por e-mail."], ["compact", "Visualização compacta", "Reduzir espaçamentos e densidade do painel."]].map(([key, title, description]) => <label key={key} className="flex cursor-pointer items-center justify-between rounded-2xl border border-slate-200 p-4 shadow-sm"><span><strong className="block text-sm">{title}</strong><span className="text-xs text-slate-500">{description}</span></span><input type="checkbox" checked={preferences[key as keyof typeof preferences]} onChange={() => setPreferences((current) => ({ ...current, [key]: !current[key as keyof typeof current] }))} className="h-5 w-5 accent-emerald-600" /></label>)}</div><button onClick={() => showSuccess("Preferências salvas localmente.")} className="mt-6 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg">Salvar preferências</button></div>}
+
+          {tab === "terms" && <div><p className="text-sm font-bold uppercase tracking-[0.2em] text-emerald-700">Termos de uso</p><h4 className="mt-2 text-2xl font-bold">{roleLabel === "Master" ? "Regras da área Master" : "Regras da área administrativa"}</h4><p className="mt-6 max-w-4xl text-base leading-8 text-slate-700">{roleLabel === "Master" ? "O acesso à área Master do ReciclaOnline é destinado exclusivamente a pessoas autorizadas e deve ser utilizado para administração, auditoria e manutenção da plataforma. As informações pessoais, registros operacionais e dados de administradores devem ser tratados de forma confidencial e somente para as finalidades previstas. As ações realizadas podem ser registradas para auditoria e conformidade." : "O acesso administrativo ao ReciclaOnline é pessoal e destinado exclusivamente à operação autorizada da plataforma. O administrador é responsável pela conferência dos pedidos, confirmação das retiradas, cadastro correto dos itens e proteção das informações dos usuários. Toda retirada deve ser validada pelo código apresentado pelo cliente, e as ações realizadas podem ser registradas para auditoria, segurança e conformidade."}</p><p className="mt-8 border-t border-slate-200 pt-5 text-sm text-slate-500">Última atualização: 21 de julho de 2026</p></div>}
         </article>
       </div>
       <ErrorModal open={logoutOpen} title="Sair da conta?" message="Tem certeza que deseja encerrar sua sessão?" closeLabel="Cancelar" confirmLabel="Sair" onClose={() => setLogoutOpen(false)} onConfirm={logout} />

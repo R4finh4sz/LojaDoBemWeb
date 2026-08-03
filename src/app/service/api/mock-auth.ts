@@ -4,7 +4,7 @@ export type MockRole = "master" | "admin";
 
 const mockUsers = {
   "master@recicla.com": { password: "master123", name: "Marina Master", roleId: 4 },
-  "admin@recicla.com": { password: "admin123", name: "André Admin", roleId: 5 },
+  "admin@recicla.com": { password: "admin123", name: "Fabiano", roleId: 5 },
 } as const;
 
 const createMockJwt = (roleId: number) => {
