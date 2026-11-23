@@ -1,9 +1,5 @@
-import AdminHome from "@/components/screens/admin/home";
+import { redirect } from "next/navigation";
 
-export const metadata = {
-  title: "Admin - ReciclaOnline",
-};
-
-export default function AdminPage() {
-  return <AdminHome />;
+export default function LegacyAdminPage() {
+  redirect("/main/Prefeitura");
 }
