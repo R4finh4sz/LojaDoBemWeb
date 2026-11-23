@@ -10,6 +10,7 @@ const demoPasswords = new Map<string, string>();
 const demoSessions = new Map<string, string>();
 const revokedSessions = new Set<string>();
 const passwordChallenges = new Map<string, { id: string; expiresAt: number; resetToken?: string }>();
+const demoProfiles = new Map<string, { email: string; jobTitle: string | null; profilePhoto: string | null }>();
 function signDemoToken(account: DemoAccount) {
   const sid = crypto.randomUUID();
   demoSessions.set(sid, account.email);
@@ -93,6 +94,11 @@ export const demoAdapter: AxiosAdapter = async (config) => {
   const allow = (...roles: string[]) => {
     if (typeof role !== "string" || !roles.includes(role)) fail("Acesso indisponível para este perfil.", 403);
   };
+  function accountProfile() {
+    const account = demoAccounts.find((account) => account.role === role);
+    if (!account) return fail("Acesso indisponível para este perfil.", 403);
+    return demoProfiles.get(account.email) ?? { email: account.email, jobTitle: null, profilePhoto: null };
+  }
 
   switch (route) {
     case "POST /auth/login": {
@@ -144,6 +150,34 @@ export const demoAdapter: AxiosAdapter = async (config) => {
       }
       return response(null, 204);
     }
+    case "GET /account/profile":
+      return response(accountProfile());
+    case "PATCH /account/profile": {
+      const profile = accountProfile();
+      if (Object.keys(body).length === 0 || Object.keys(body).some((key) => key !== "jobTitle" && key !== "profilePhoto")) {
+        return fail("Informe apenas a função ou a foto.");
+      }
+      if (body.jobTitle !== undefined && (typeof body.jobTitle !== "string" || body.jobTitle.trim().length > 100)) {
+        return fail("A função deve ter no máximo 100 caracteres.");
+      }
+      if (body.profilePhoto !== undefined && (typeof body.profilePhoto !== "string" || body.profilePhoto.length > 700000 ||
+        !/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(body.profilePhoto))) {
+        return fail("Selecione uma foto JPG, PNG ou WebP válida.");
+      }
+      const updated = {
+        ...profile,
+        ...(body.jobTitle !== undefined && { jobTitle: body.jobTitle.trim() || null }),
+        ...(body.profilePhoto !== undefined && { profilePhoto: body.profilePhoto }),
+      };
+      demoProfiles.set(profile.email, updated);
+      return response(updated);
+    }
+    case "GET /account/export":
+      if (url.searchParams.get("format") !== "json") return fail("Esta exportação está disponível com a API real.", 501);
+      return response({
+        exportedAt: now(), account: { ...accountProfile(), role },
+        terms: [], redemptions: [], ecoCoinTransactions: [], products: [],
+      });
     case "GET /account/sessions":
       allow("MASTER", "PrefeituraVendedor", "COOPERATIVA");
       return response({

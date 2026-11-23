@@ -20,4 +20,4 @@ O crédito de ecocoins usa o CPF do munícipe e é feito no painel da cooperativ
 
 Defina `NEXT_PUBLIC_DEMO_MODE=true` em `.env.local` e reinicie `yarn dev`. Em `/Auth/Login`, selecione um perfil, clique em **Entrar** e use o código `123456`.
 
-Use o CPF `529.982.247-25` para testar o crédito de ecocoins e o carrinho. Para testar uma retirada, use `ABCD1234EF56`. Os dados de demonstração voltam aos valores iniciais ao recarregar a página. Recuperação de senha e exportação de arquivos dependem da API real.
+Use o CPF `529.982.247-25` para testar o crédito de ecocoins e o carrinho. Para testar uma retirada, use `ABCD1234EF56`. Os dados de demonstração voltam aos valores iniciais ao recarregar a página. A recuperação de senha pela tela de login e a exportação do estoque dependem da API real.

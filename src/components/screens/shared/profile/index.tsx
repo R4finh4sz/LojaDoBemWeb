@@ -3,16 +3,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { BookOpen, Camera, ChevronLeft, ChevronRight, Clock3, KeyRound, MapPin, Monitor, UserCircle2, UserRoundPen } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, Clock3, KeyRound, MapPin, Monitor, UserCircle2, UserRoundPen } from "lucide-react";
 import { getStoredAvatarUrl, getStoredUserEmail, getStoredUserName, setStoredAvatarUrl } from "@/app/service/api/auth-session";
-import { apiError, http } from "@/app/service/api/http";
 import { authService } from "@/app/service/api/authService";
 import { useApiResource } from "@/app/service/api/use-api-resource";
-import { FormInput } from "@/components/ui/form-input";
-import { useGlobalModalStore } from "@/stores/useGlobalModalStore";
 import ErrorModal from "@/components/ui/modal/ErrorModal";
 import { demoEnabled } from "@/app/service/api/demo-config";
 import { ChangePassword } from "./change-password";
+import { ProfileDetails, type AccountProfile } from "./profile-details";
 
 type ProfileTab = "access" | "password" | "data" | "terms";
 const tabs = [
@@ -35,42 +33,19 @@ type ProfilePageProps = {
 export const ProfilePage = ({ roleLabel = "Master" }: ProfilePageProps) => {
   const router = useRouter();
   const [tab, setTab] = useState<ProfileTab>("access");
-  const [preview, setPreview] = useState<string | null>(() => getStoredAvatarUrl());
+  const profile = useApiResource<AccountProfile>("account/profile");
+  const [savedProfile, setSavedProfile] = useState<AccountProfile | null>(null);
+  const details = savedProfile ?? profile?.data;
+  const preview = details?.profilePhoto ?? getStoredAvatarUrl();
   const [logoutOpen, setLogoutOpen] = useState(false);
-  const showError = useGlobalModalStore((state) => state.showError);
-  const [exporting, setExporting] = useState(false);
   const userName = getStoredUserName() ?? roleLabel;
-  const userEmail = getStoredUserEmail() ?? "";
+  const userEmail = details?.email ?? getStoredUserEmail() ?? "";
   const profileTabs = [...tabs, { id: "terms" as const, label: "Termos de uso", icon: BookOpen }];
   const logout = async () => { await authService.logout(); router.replace("/Auth/Login"); };
-  async function exportData() {
-    setExporting(true);
-    try {
-      const { data } = await http.get<Blob>("account/export", { responseType: "blob" });
-      const url = URL.createObjectURL(data);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "meus-dados.pdf";
-      link.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    } catch (error) {
-      showError(apiError(error, "Não foi possível exportar seus dados."));
-    } finally {
-      setExporting(false);
-    }
+  function saveProfile(data: AccountProfile) {
+    setSavedProfile(data);
+    if (data.profilePhoto) setStoredAvatarUrl(data.profilePhoto);
   }
-
-  const selectPhoto = (file?: File) => {
-    if (!file) return;
-    if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result !== "string") return;
-      setPreview(reader.result);
-      setStoredAvatarUrl(reader.result);
-    };
-    reader.readAsDataURL(file);
-  };
 
   return (
     <section className="space-y-6">
@@ -94,24 +69,13 @@ export const ProfilePage = ({ roleLabel = "Master" }: ProfilePageProps) => {
           {tab === "access" && <AccessHistory />}
           {tab === "password" && <ChangePassword email={userEmail} managed={roleLabel === "Master" && !demoEnabled} />}
 
-          {tab === "data" && (
-            <section>
-              <h4 className="text-2xl font-bold">Meus dados</h4>
-              <div className="mt-6 grid gap-6 sm:grid-cols-[160px_1fr]">
-                <label className="flex h-36 w-36 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-3xl border-2 border-dashed border-emerald-300 bg-emerald-50 text-center">
-                  {preview ? <img src={preview} alt="Foto do perfil" className="h-full w-full object-cover" /> : <><Camera className="text-emerald-700" size={30} /><span className="mt-2 text-xs font-semibold">Alterar foto neste navegador</span></>}
-                  <input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" onChange={(event) => selectPhoto(event.target.files?.[0])} />
-                </label>
-                <div className="space-y-4">
-                  <FormInput value={userEmail} readOnly type="email" label="E-mail" />
-                  <FormInput value={roleLabel} readOnly label="Função" />
-                  <button disabled={exporting} onClick={exportData} className="rounded-xl bg-emerald-700 px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">
-                    {exporting ? "Gerando PDF..." : "Exportar meus dados em PDF"}
-                  </button>
-                </div>
-              </div>
-            </section>
-          )}
+          {tab === "data" && (details ? (
+            <ProfileDetails profile={details} roleLabel={roleLabel} onSaved={saveProfile} />
+          ) : (
+            <p role={profile?.error ? "alert" : "status"} className="text-sm text-slate-600">
+              {profile?.error ?? "Carregando seus dados..."}
+            </p>
+          ))}
 
           {tab === "terms" && <CurrentTerm />}
         </article>
