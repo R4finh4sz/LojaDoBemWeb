@@ -38,9 +38,9 @@ export const FormInput = ({
           type={inputType}
           className={`w-full rounded-xl border px-4 py-3 text-sm text-slate-800 placeholder-slate-400 outline-none transition ${
             error
-              ? "border-red-400 bg-red-50 focus:border-red-400 focus:bg-white focus:ring-2 focus:ring-red-400/20"
+              ? "border-red-400 bg-red-50 focus:border-red-400 focus:bg-white focus:ring-2 focus:ring-red-400/20 dark:bg-red-950/45 dark:focus:bg-red-950/60"
               : "border-slate-200 bg-slate-50 focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-400/20"
-          } ${isPasswordField ? "pr-14" : ""} disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400 disabled:opacity-45 disabled:shadow-none ${className || ""}`}
+          } ${isPasswordField ? "pr-14" : ""} dark:[color-scheme:dark] disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400 disabled:opacity-45 disabled:shadow-none ${className || ""}`}
         />
         {isPasswordField ? (
           <button
@@ -58,7 +58,7 @@ export const FormInput = ({
         ) : null}
       </div>
       {error && (
-        <p className="mt-1.5 mb-3 text-xs text-red-600">{error.message}</p>
+        <p className="mt-1.5 mb-3 text-xs text-red-600 dark:text-red-300">{error.message}</p>
       )}
       {helpText && !error && (
         <p className="mt-1.5 mb-3 text-xs text-slate-500">{helpText}</p>
