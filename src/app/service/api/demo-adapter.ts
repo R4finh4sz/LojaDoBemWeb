@@ -9,9 +9,51 @@ const signDemoToken = (role: string) =>
   [btoa('{"alg":"none"}'), btoa(JSON.stringify({ role, exp: Math.floor(Date.now() / 1000) + 3600 })), "demo"].join(".");
 
 const residents = new Map([[digits(demoCpf), { id: "municipe-demo", balance: 124000, pendingActivation: false }]]);
+const demoStock = [
+  { name: "Caneca de cerâmica", price: 65, quantity: 12 },
+  { name: "Kit de canudos inox", price: 38, quantity: 24 },
+  { name: "Caderno reciclado", price: 32, quantity: 41 },
+  { name: "Pote hermético", price: 58, quantity: 9 },
+  { name: "Marmita de inox", price: 135, quantity: 6 },
+  { name: "Garrafa esportiva", price: 80, quantity: 16 },
+  { name: "Ecobag dobrável", price: 42, quantity: 19 },
+  { name: "Mochila de lona", price: 165, quantity: 4 },
+  { name: "Necessaire de algodão", price: 55, quantity: 11 },
+  { name: "Porta-talheres de tecido", price: 29, quantity: 20 },
+  { name: "Jogo de talheres de bambu", price: 48, quantity: 15 },
+  { name: "Copo retrátil", price: 72, quantity: 7 },
+  { name: "Caneca térmica", price: 105, quantity: 8 },
+  { name: "Vaso de fibra de coco", price: 23, quantity: 26 },
+  { name: "Kit de sementes de manjericão", price: 18, quantity: 35 },
+  { name: "Regador de jardim", price: 47, quantity: 6 },
+  { name: "Pá de jardinagem", price: 26, quantity: 14 },
+  { name: "Composteira doméstica", price: 245, quantity: 2 },
+  { name: "Sabonete vegetal", price: 16, quantity: 28 },
+  { name: "Escova de bambu", price: 22, quantity: 33 },
+  { name: "Bucha vegetal", price: 14, quantity: 45 },
+  { name: "Porta-sabonete de madeira", price: 27, quantity: 10 },
+  { name: "Pano de limpeza reutilizável", price: 19, quantity: 36 },
+  { name: "Guardanapos de tecido", price: 35, quantity: 17 },
+  { name: "Estojo de lona", price: 34, quantity: 21 },
+  { name: "Lápis plantável", price: 12, quantity: 52 },
+  { name: "Marcadores de página reciclados", price: 10, quantity: 38 },
+  { name: "Caixa organizadora", price: 63, quantity: 13 },
+];
 const products = [
   { id: "garrafa", name: "Garrafa térmica", description: "Aço reciclado, 600 ml", price: "120.00", quantity: 18, barcode: "7891234567895", photo: "/mock-bottle.svg" },
   { id: "ecobag", name: "Ecobag", description: "Sacola reutilizável", price: "45.00", quantity: 32, barcode: "7891234567888", photo: "/mock-bag.svg" },
+  ...demoStock.map(({ name, price, quantity }, index) => {
+    const code = String(index + 3).padStart(3, "0");
+    return {
+      id: "produto-demo-" + code,
+      name,
+      description: "Produto do catálogo de demonstração",
+      price: price.toFixed(2),
+      quantity,
+      barcode: "DEMO-" + code,
+      photo: "",
+    };
+  }),
 ];
 type Cart = { id: string; buyerId: string; expiresAt: string; items: { productId: string; quantity: number; product: typeof products[number] }[] };
 const carts = new Map<string, Cart>();
