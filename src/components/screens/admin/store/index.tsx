@@ -159,18 +159,27 @@ export function AdminStore() {
               )}
             </dl>
           </header>
-          {!cart.items.length && <p>Adicione itens ao carrinho.</p>}
-          <ul className="space-y-2">
-            {cart.items.map((item) => (
-              <li key={item.productId} className="flex flex-wrap items-center justify-between gap-3">
-                <span>{item.quantity} × {item.product.name} · {coins(Number(item.product.price) * item.quantity)} ecocoins</span>
-                <div className="flex items-center gap-3">
-                  <button type="button" className="rounded-lg border border-slate-200 px-3 py-1 disabled:opacity-50" aria-label={"Diminuir quantidade de " + item.product.name} disabled={busy || checkoutUnconfirmed || item.quantity <= 1} onClick={() => void updateItem(item.product, item.quantity - 1)}>−</button>
-                  <button type="button" className="text-sm underline disabled:opacity-50" disabled={busy || checkoutUnconfirmed} onClick={() => void updateItem(item.product, 0)}>Remover</button>
-                </div>
-              </li>
-            ))}
-          </ul>
+          <section aria-labelledby="cart-items-heading" className="mt-7 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 sm:px-5">
+            <h4 id="cart-items-heading" className="font-semibold">Itens do carrinho</h4>
+            {!cart.items.length ? (
+              <p className="mt-2 text-sm text-slate-600">Adicione produtos pelo carrossel abaixo.</p>
+            ) : (
+              <ul className="mt-3 divide-y divide-slate-200 border-t border-slate-200 dark:divide-slate-700">
+                {cart.items.map((item) => (
+                  <li key={item.productId} className="flex flex-wrap items-center justify-between gap-3 py-3 last:pb-0">
+                    <div className="min-w-0">
+                      <p className="break-words text-sm font-semibold">{item.quantity} × {item.product.name}</p>
+                      <p className="mt-0.5 text-sm text-slate-600">{coins(Number(item.product.price) * item.quantity)} ecocoins</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button type="button" className="rounded-lg border border-slate-200 px-3 py-1 disabled:opacity-50" aria-label={"Diminuir quantidade de " + item.product.name} disabled={busy || checkoutUnconfirmed || item.quantity <= 1} onClick={() => void updateItem(item.product, item.quantity - 1)}>−</button>
+                      <button type="button" className="text-sm underline disabled:opacity-50" disabled={busy || checkoutUnconfirmed} onClick={() => void updateItem(item.product, 0)}>Remover</button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
           <ProductCarousel
             disabled={busy || checkoutUnconfirmed}
             quantityInCart={(id) => cart.items.find((item) => item.productId === id)?.quantity ?? 0}
