@@ -2,11 +2,10 @@
 
 import { useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Coins, House, LogOut, Menu, Recycle, UserPlus, UserRound, X } from "lucide-react";
+import { ArrowRight, Coins, House, LogOut, Menu, Recycle, UserRound, X } from "lucide-react";
 import { authService } from "@/app/service/api/authService";
 import { demoCpf, demoEnabled } from "@/app/service/api/demo-config";
 import { apiError, http } from "@/app/service/api/http";
-import { CitizenRegistration } from "@/components/screens/admin/citizen-registration";
 import { ProfilePage } from "@/components/screens/shared/profile";
 import { FormInput } from "@/components/ui/form-input";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -19,23 +18,7 @@ const format = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
 const sections = [
   { id: "home", label: "Início", icon: House },
   { id: "credit", label: "Adicionar ecocoins", icon: Coins },
-  { id: "resident", label: "Pré-cadastrar munícipe", icon: UserPlus },
   { id: "profile", label: "Perfil", icon: UserRound },
-] as const;
-
-const serviceActions = [
-  {
-    id: "credit",
-    title: "Adicionar ecocoins",
-    description: "Informe o CPF do munícipe e a quantidade de ecocoins. Após confirmar, confira o protocolo e o saldo atualizado.",
-    icon: Coins,
-  },
-  {
-    id: "resident",
-    title: "Pré-cadastrar munícipe",
-    description: "Tenha em mãos os dados pessoais, o endereço e o termo assinado em PDF de até 2 MiB.",
-    icon: UserPlus,
-  },
 ] as const;
 
 export default function CooperativeHome() {
@@ -131,28 +114,24 @@ export default function CooperativeHome() {
           <section aria-labelledby="service-heading" className="space-y-6">
             <div>
               <h2 id="service-heading" className="text-xl font-bold">Atendimento ao munícipe</h2>
-              <p className="mt-1 text-sm text-slate-600">Escolha o serviço para começar.</p>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
-              {serviceActions.map(({ id, title, description, icon: Icon }) => (
-                <article key={id} className="flex flex-col items-start rounded-3xl border border-slate-200 bg-white p-6">
-                  <span className="mb-4 grid size-11 place-items-center rounded-xl bg-emerald-700 text-white">
-                    <Icon size={21} aria-hidden="true" />
-                  </span>
-                  <h3 className="text-lg font-bold">{title}</h3>
-                  <p className="mt-2 mb-5 text-sm leading-relaxed text-slate-600">{description}</p>
-                  <button type="button" onClick={() => setTab(id)} className={button + " mt-auto inline-flex items-center gap-2"}>
-                    {title}<ArrowRight size={16} aria-hidden="true" />
-                  </button>
-                </article>
-              ))}
+              <article className="flex flex-col items-start rounded-3xl border border-slate-200 bg-white p-6">
+                <span className="mb-4 grid size-11 place-items-center rounded-xl bg-emerald-700 text-white">
+                  <Coins size={21} aria-hidden="true" />
+                </span>
+                <p className="mb-5 text-sm leading-relaxed text-slate-600">Informe o CPF do munícipe e a quantidade de ecocoins. Após confirmar, confira o protocolo e o saldo atualizado.</p>
+                <button type="button" onClick={() => setTab("credit")} className={button + " mt-auto inline-flex items-center gap-2"}>
+                  Adicionar ecocoins<ArrowRight size={16} aria-hidden="true" />
+                </button>
+              </article>
+              <aside className="self-start rounded-2xl border border-slate-200 bg-white p-5">
+                <h3 className="font-semibold">CPF não encontrado?</h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  Confira os dígitos com o munícipe. Se ele ainda não tiver cadastro, oriente-o a procurar o atendimento da Prefeitura.
+                </p>
+              </aside>
             </div>
-            <aside className="rounded-2xl border border-slate-200 bg-white p-5">
-              <h3 className="font-semibold">CPF não encontrado?</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                Confira os dígitos com o munícipe. Se ele ainda não tiver cadastro, faça o pré-cadastro antes de tentar o crédito novamente.
-              </p>
-            </aside>
           </section>
         )}
         {tab === "credit" && (
@@ -178,7 +157,6 @@ export default function CooperativeHome() {
             )}
           </section>
         )}
-        {tab === "resident" && <CitizenRegistration />}
         {tab === "profile" && <ProfilePage roleLabel="Cooperativa" />}
       </main>
     </div>

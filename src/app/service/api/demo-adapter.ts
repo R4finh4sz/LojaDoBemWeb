@@ -121,7 +121,7 @@ export const demoAdapter: AxiosAdapter = async (config) => {
         systemHealth: { api: { status: "UP" }, authentication: { status: "UP" }, processing: { status: "UP" } },
       });
     case "POST /residents/pre-registrations": {
-      allow("COOPERATIVA", "PrefeituraVendedor");
+      allow("PrefeituraVendedor");
       const cpf = digits(body.cpf);
       if (residents.has(cpf)) return fail("CPF já cadastrado na demonstração.", 409);
       const resident = { id: crypto.randomUUID(), name: body.name, balance: 0, pendingActivation: true };
