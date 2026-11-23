@@ -180,13 +180,8 @@ export function AdminStore() {
               </ul>
             )}
           </section>
-          <ProductCarousel
-            disabled={busy || checkoutUnconfirmed}
-            quantityInCart={(id) => cart.items.find((item) => item.productId === id)?.quantity ?? 0}
-            onAdd={addItem}
-          />
-          <p className="font-semibold">Total de {coins(cart.items.reduce((total, item) => total + Number(item.product.price) * item.quantity, 0))} ecocoins</p>
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3 py-2">
+            <p className="w-full font-semibold sm:w-auto">Total de {coins(cart.items.reduce((total, item) => total + Number(item.product.price) * item.quantity, 0))} ecocoins</p>
             <button type="button" className={action} disabled={busy || !cart.items.length} onClick={checkout}>
               {checkoutUnconfirmed ? "Confirmar resultado da venda" : "Finalizar venda"}
             </button>
@@ -197,6 +192,11 @@ export function AdminStore() {
               setCpf("");
             })}>Cancelar carrinho</button>
           </div>
+          <ProductCarousel
+            disabled={busy || checkoutUnconfirmed}
+            quantityInCart={(id) => cart.items.find((item) => item.productId === id)?.quantity ?? 0}
+            onAdd={addItem}
+          />
         </div>
       )}
     </section>
