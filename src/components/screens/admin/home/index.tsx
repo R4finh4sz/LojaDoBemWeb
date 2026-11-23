@@ -76,7 +76,12 @@ export const AdminHome = () => {
                 <div className="flex items-center gap-2"><ThemeToggle compact /><button type="button" onClick={() => setTab("profile")} className="group flex items-center gap-2 rounded-xl px-1.5 py-1 transition hover:bg-slate-50 dark:hover:bg-slate-800">
                   <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-sm font-bold text-white">{avatarUrl ? <img src={avatarUrl} alt={adminName} className="h-full w-full object-cover" /> : <span>{initials}</span>}</div>
                   <div className="hidden text-left sm:block"><p className="text-sm font-semibold leading-tight text-slate-900 group-hover:text-emerald-700">{adminName}</p><p className="mt-0.5 text-xs text-slate-500">Vendedor da Prefeitura</p></div>
-                </button></div>
+                </button>
+                  <button type="button" onClick={() => setLogoutOpen(true)} aria-label="Sair"
+                    className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-slate-200 px-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:hover:bg-slate-800 sm:px-3">
+                    <LogOut size={16} aria-hidden="true" /><span className="hidden sm:inline">Sair</span>
+                  </button>
+                </div>
               </div>
             </header>
 
@@ -97,7 +102,6 @@ export const AdminHome = () => {
             </main>
           </div>
         </div>
-        <button type="button" onClick={() => setLogoutOpen(true)} className="fixed bottom-5 right-5 inline-flex items-center gap-2 rounded-3xl bg-emerald-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-800"><LogOut size={16} />Sair</button>
         <ErrorModal open={logoutOpen} title="Sair da conta?" message="Tem certeza que deseja encerrar sua sessão?" closeLabel="Cancelar" confirmLabel="Sair" onClose={() => setLogoutOpen(false)} onConfirm={logout} />
       </div>
     </AuthGuard>
