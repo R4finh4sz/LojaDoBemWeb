@@ -235,7 +235,7 @@ export function Inventory() {
           <FormInput label="Nome ou descrição" name="search" maxLength={120} />
           <FormInput label="Código de barras" name="barcode" />
           <label className="text-sm">Estoque
-            <select name="stock" className="block w-full rounded-lg border border-slate-400 p-2">
+            <select name="stock" className="block w-full rounded-lg border border-slate-400 bg-white p-2 text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:[color-scheme:dark] [&>option]:bg-white [&>option]:text-slate-900 dark:[&>option]:bg-slate-900 dark:[&>option]:text-slate-100">
               <option value="">Todos</option><option value="available">Disponíveis</option><option value="out">Sem estoque</option>
             </select>
           </label>
