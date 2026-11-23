@@ -125,11 +125,15 @@ export default function CooperativeHome() {
                   Adicionar ecocoins<ArrowRight size={16} aria-hidden="true" />
                 </button>
               </article>
-              <aside className="self-start rounded-2xl border border-slate-200 bg-white p-5">
+              <aside className="flex flex-col rounded-3xl border border-slate-200 bg-white p-6">
                 <h3 className="font-semibold">CPF não encontrado?</h3>
                 <p className="mt-2 text-sm leading-relaxed text-slate-600">
                   Confira os dígitos com o munícipe. Se ele ainda não tiver cadastro, oriente-o a procurar o atendimento da Prefeitura.
                 </p>
+                <div className="mt-auto pt-4">
+                  <p className="border-t border-slate-200 pt-3 text-sm text-slate-600">Em caso de dúvidas, entre em contato com a equipe da Prefeitura.</p>
+                  <p className="mt-1 text-sm font-semibold">Fundo Social · 4696-000</p>
+                </div>
               </aside>
             </div>
           </section>
