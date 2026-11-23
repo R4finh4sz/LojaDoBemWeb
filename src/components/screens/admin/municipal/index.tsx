@@ -1,5 +1,6 @@
 "use client";
 
+import { isAxiosError } from "axios";
 import { useState, type FormEvent } from "react";
 import { ChevronLeft, ChevronRight, ImagePlus } from "lucide-react";
 import { apiError, http } from "@/app/service/api/http";
@@ -15,6 +16,7 @@ export const productUrl = "store/admin/products";
 export const card = "space-y-4 rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900";
 export const action = "rounded-xl bg-emerald-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50";
 export const coins = (value: string | number) => Number(value).toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+const productPricePattern = "[0-9]{1,10}([.,][0-9]{1,2})?";
 
 export function ResourceStatus({ error }: { error?: string }) {
   return error ? <p role="alert" className="text-red-700">{error}</p> : <p role="status">Carregando...</p>;
@@ -149,7 +151,7 @@ export function CreateProduct() {
         <FormInput label="Nome" name="name" required maxLength={120} />
         <FormInput label="Descrição" name="description" required maxLength={2000} />
         <FormInput label="Código de barras" name="barcode" />
-        <FormInput label="Valor em ecocoins" name="price" inputMode="decimal" pattern="[0-9]+([.,][0-9]{1,2})?" required />
+        <FormInput label="Valor em ecocoins" name="price" inputMode="decimal" pattern={productPricePattern} required />
         <FormInput label="Estoque inicial" name="quantity" type="number" min="0" max="2147483647" required />
         <div className="sm:col-span-2">
           <label htmlFor="product-photo" className="relative flex cursor-pointer flex-wrap items-center gap-3 rounded-2xl border border-dashed border-emerald-500 bg-emerald-50 p-4 text-slate-900 hover:border-emerald-700 focus-within:ring-2 focus-within:ring-emerald-500 dark:bg-slate-800">
@@ -188,12 +190,17 @@ export function Inventory() {
     event.preventDefault();
     setBusy(true);
     setError("");
-    const quantity = Number(new FormData(event.currentTarget).get("quantity"));
+    const values = new FormData(event.currentTarget);
+    const quantity = Number(values.get("quantity"));
+    const price = String(values.get("price")).trim().replace(",", ".");
     try {
-      await http.patch(productUrl + "/" + product.id + "/stock", { quantity, expectedQuantity: product.quantity });
+      await http.patch(productUrl + "/" + product.id + "/stock", {
+        quantity, expectedQuantity: product.quantity, price, expectedPrice: product.price,
+      });
       setRefresh(refresh + 1);
     } catch (error) {
-      setError(apiError(error, "Não foi possível atualizar o estoque."));
+      setError(apiError(error, "Não foi possível atualizar o preço e o estoque."));
+      if (isAxiosError(error) && error.response?.status === 409) setRefresh(refresh + 1);
     } finally {
       setBusy(false);
     }
@@ -240,10 +247,12 @@ export function Inventory() {
           <>
             {!result.data.products.length && <p>Nenhum item encontrado.</p>}
             {result.data.products.map((product) => (
-              <form key={product.id} onSubmit={(event) => void update(event, product)} className="grid items-end gap-3 border-t border-slate-200 pt-4 sm:grid-cols-[1fr_150px_auto]">
-                <div><strong>{product.name}</strong><p className="text-sm">{coins(product.price)} ecocoins · {product.quantity} un.</p></div>
-                <FormInput label="Novo estoque" id={"stock-" + product.id} name="quantity" type="number" min="0" max="2147483647" defaultValue={product.quantity} required />
-                <button className={action} disabled={busy}>Atualizar</button>
+              <form key={product.id} onSubmit={(event) => void update(event, product)} className="grid grid-cols-2 items-end gap-3 border-t border-slate-200 pt-4 xl:grid-cols-[minmax(0,1fr)_minmax(8rem,10rem)_minmax(7rem,9rem)_auto]">
+                <div className="col-span-2 xl:col-span-1"><strong>{product.name}</strong><p className="text-sm text-slate-600">{coins(product.price)} ecocoins · {product.quantity} un.</p></div>
+                <FormInput label="Preço em ecocoins" id={"price-" + product.id} name="price" inputMode="decimal"
+                  pattern={productPricePattern} defaultValue={product.price.replace(".", ",")} required disabled={busy} />
+                <FormInput label="Novo estoque" id={"stock-" + product.id} name="quantity" type="number" min="0" max="2147483647" defaultValue={product.quantity} required disabled={busy} />
+                <button className={action + " col-span-2 justify-self-end xl:col-span-1"} disabled={busy}>Atualizar</button>
               </form>
             ))}
           </>

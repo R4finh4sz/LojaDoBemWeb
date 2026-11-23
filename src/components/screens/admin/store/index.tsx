@@ -29,7 +29,11 @@ export function AdminStore({ onViewProtocol }: { onViewProtocol: (protocol: stri
   const [error, setError] = useState("");
   const [addedItem, setAddedItem] = useState<{ name: string } | null>(null);
   const inFlight = useRef(false);
-  const total = cart?.items.reduce((sum, item) => sum + Math.round(Number(item.product.price) * 100) * item.quantity, 0) ?? 0;
+  const total = cart?.items.reduce(
+    (sum, item) => sum + BigInt(Math.round(Number(item.product.price) * 100)) * BigInt(item.quantity),
+    BigInt(0),
+  ) ?? BigInt(0);
+  const totalInCoins = total.toString().padStart(3, "0").replace(/([0-9]{2})$/, ".$1");
 
   useEffect(() => {
     if (!addedItem) return;
@@ -37,7 +41,7 @@ export function AdminStore({ onViewProtocol }: { onViewProtocol: (protocol: stri
     return () => clearTimeout(timer);
   }, [addedItem]);
 
-  async function perform(operation: () => Promise<void>, onError?: (error: unknown) => void) {
+  async function perform(operation: () => Promise<void>, onError?: (error: unknown) => void | Promise<void>) {
     if (inFlight.current) return false;
     inFlight.current = true;
     setBusy(true);
@@ -46,7 +50,7 @@ export function AdminStore({ onViewProtocol }: { onViewProtocol: (protocol: stri
       await operation();
       return true;
     } catch (error) {
-      onError?.(error);
+      await onError?.(error);
       setError(apiError(error, "Não foi possível concluir a operação. Verifique a conexão e tente novamente."));
       return false;
     } finally {
@@ -99,14 +103,19 @@ export function AdminStore({ onViewProtocol }: { onViewProtocol: (protocol: stri
     setConfirmation(null);
     setCheckoutUnconfirmed(true);
     await perform(async () => {
-      const { data } = await http.post<Receipt>(cartsUrl + "/" + cart.id + "/checkout");
+      const { data } = await http.post<Receipt>(cartsUrl + "/" + cart.id + "/checkout", { expectedTotal: totalInCoins });
       setReceipt(data);
       setCheckoutUnconfirmed(false);
       setCart(null);
       setBuyer(null);
       setCpf("");
-    }, (error) => {
-      if (isAxiosError(error) && error.response && error.response.status < 500) setCheckoutUnconfirmed(false);
+    }, async (error) => {
+      if (!isAxiosError(error) || !error.response || error.response.status >= 500) return;
+      setCheckoutUnconfirmed(false);
+      if (error.response.status === 412) {
+        const updated = await http.get<Cart>(cartsUrl + "/" + cart.id).catch(() => null);
+        if (updated) setCart(updated.data);
+      }
     });
   }
 
@@ -136,7 +145,7 @@ export function AdminStore({ onViewProtocol }: { onViewProtocol: (protocol: stri
           <h3 className="text-xl font-bold text-slate-900">{confirmation === "cancel" ? "Tem certeza que deseja cancelar?" : "Finalizar venda?"}</h3>
           <p className="text-sm text-slate-600">
             {confirmation === "cancel" ? "Os itens serão removidos do carrinho. Nenhum ecocoin será debitado." :
-              <>Confirme o débito de <strong>{coins(total / 100)} ecocoins</strong> do saldo do munícipe.</>}
+              <>Confirme o débito de <strong>{coins(totalInCoins)} ecocoins</strong> do saldo do munícipe.</>}
           </p>
           <div className="flex flex-wrap justify-end gap-3">
             <button type="button" onClick={() => setConfirmation(null)}
@@ -219,7 +228,7 @@ export function AdminStore({ onViewProtocol }: { onViewProtocol: (protocol: stri
             )}
           </section>
           <div className="flex flex-wrap items-center gap-3 py-2">
-            <p className="w-full font-semibold sm:w-auto">Total de {coins(total / 100)} ecocoins</p>
+            <p className="w-full font-semibold sm:w-auto">Total de {coins(totalInCoins)} ecocoins</p>
             <button type="button" className={action} disabled={busy || !cart.items.length} onClick={() => {
               if (checkoutUnconfirmed) void checkout();
               else setConfirmation("checkout");

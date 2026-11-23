@@ -75,7 +75,7 @@ export const demoAdapter: AxiosAdapter = async (config) => {
   const body = config.data ? JSON.parse(config.data) : {};
   const token = String(config.headers.get("Authorization") ?? "").replace("Bearer ", "");
   const role = token.endsWith(".demo") ? decodeJwtPayload(token)?.role : null;
-  const response = (data: unknown, status = 200) => ({ data, status, statusText: String(status), headers: {}, config });
+  const response = (data: unknown, status = 200) => ({ data: structuredClone(data), status, statusText: String(status), headers: {}, config });
   const fail = (message: string, status = 400): never => {
     throw new AxiosError(message, AxiosError.ERR_BAD_REQUEST, config, undefined, response({ message }, status));
   };
@@ -198,8 +198,18 @@ export const demoAdapter: AxiosAdapter = async (config) => {
   if (resource === "products" && action === "stock" && config.method === "patch") {
     const product = products.find((item) => item.id === id);
     if (!product) return fail("Item não encontrado.", 404);
-    if (product.quantity !== body.expectedQuantity) return fail("O estoque foi alterado.", 409);
+    const { price, expectedPrice } = body;
+    const normalize = (value: string) => value.trim().replace(",", ".");
+    const valid = (value: unknown): value is string => typeof value === "string" && /^[0-9]{1,10}([.,][0-9]{1,2})?$/.test(value.trim());
+    if ((price !== undefined || expectedPrice !== undefined) && (!valid(price) || !valid(expectedPrice))) {
+      return fail("Informe o preço atual e o novo preço com até duas casas decimais.");
+    }
+    if (product.quantity !== body.expectedQuantity ||
+      (expectedPrice !== undefined && Number(product.price) !== Number(normalize(expectedPrice)))) {
+      return fail("O estoque ou o preço foi alterado. Confira os valores atuais antes de salvar.", 409);
+    }
     product.quantity = body.quantity;
+    if (price !== undefined) product.price = Number(normalize(price)).toFixed(2);
     return response({ product });
   }
   if (resource !== "carts") return fail("Esta operação está disponível com a API real.", 501);
@@ -221,6 +231,9 @@ export const demoAdapter: AxiosAdapter = async (config) => {
   if (action === "checkout") {
     const buyer = [...residents.values()].find((resident) => resident.id === cart.buyerId);
     const total = cart.items.reduce((sum, item) => sum + Math.round(Number(item.product.price) * 100) * item.quantity, 0);
+    if (body.expectedTotal !== undefined && body.expectedTotal !== money(total)) {
+      return fail("O total do carrinho mudou. Confira o novo valor antes de confirmar a venda.", 412);
+    }
     if (!buyer || buyer.balance < total || cart.items.some((item) => item.quantity > item.product.quantity)) {
       return fail("Saldo ou estoque insuficiente.", 409);
     }
