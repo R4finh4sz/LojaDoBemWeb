@@ -5,8 +5,17 @@ import { demoAccounts, demoCode, demoCpf, demoPassword } from "./demo-config";
 const digits = (value: string) => value.replace(/\D/g, "");
 const money = (cents: number) => (cents / 100).toFixed(2);
 const now = () => new Date().toISOString();
-const signDemoToken = (role: string) =>
-  [btoa('{"alg":"none"}'), btoa(JSON.stringify({ role, exp: Math.floor(Date.now() / 1000) + 3600 })), "demo"].join(".");
+type DemoAccount = (typeof demoAccounts)[number];
+const demoPasswords = new Map<string, string>();
+const demoSessions = new Map<string, string>();
+const revokedSessions = new Set<string>();
+const passwordChallenges = new Map<string, { id: string; expiresAt: number; resetToken?: string }>();
+function signDemoToken(account: DemoAccount) {
+  const sid = crypto.randomUUID();
+  demoSessions.set(sid, account.email);
+  const payload = { sid, role: account.role, exp: Math.floor(Date.now() / 1000) + 3600 };
+  return [btoa('{"alg":"none"}'), btoa(JSON.stringify(payload)), "demo"].join(".");
+}
 
 const residents = new Map([[digits(demoCpf), { id: "municipe-demo", name: "Ana Paula da Silva", balance: 124000, pendingActivation: false }]]);
 const demoStock = [
@@ -74,7 +83,9 @@ export const demoAdapter: AxiosAdapter = async (config) => {
   const route = config.method?.toUpperCase() + " " + url.pathname;
   const body = config.data ? JSON.parse(config.data) : {};
   const token = String(config.headers.get("Authorization") ?? "").replace("Bearer ", "");
-  const role = token.endsWith(".demo") ? decodeJwtPayload(token)?.role : null;
+  const payload = token.endsWith(".demo") ? decodeJwtPayload(token) : null;
+  const sessionId = typeof payload?.sid === "string" ? payload.sid : token;
+  const role = revokedSessions.has(sessionId) ? null : payload?.role;
   const response = (data: unknown, status = 200) => ({ data: structuredClone(data), status, statusText: String(status), headers: {}, config });
   const fail = (message: string, status = 400): never => {
     throw new AxiosError(message, AxiosError.ERR_BAD_REQUEST, config, undefined, response({ message }, status));
@@ -86,17 +97,55 @@ export const demoAdapter: AxiosAdapter = async (config) => {
   switch (route) {
     case "POST /auth/login": {
       const account = demoAccounts.find(({ email }) => email === String(body.email).trim().toLowerCase());
-      if (!account || body.password !== demoPassword) return fail("Use uma das contas de demonstração.", 401);
+      if (!account || body.password !== (demoPasswords.get(account.email) ?? demoPassword)) return fail("Credenciais de demonstração inválidas.", 401);
       return response({ challengeId: account.email });
     }
     case "POST /auth/2fa/verify": {
       const account = demoAccounts.find(({ email }) => email === body.challengeId);
       if (!account || body.code !== demoCode) return fail("Código inválido. Na demonstração, use 123456.", 401);
-      return response({ token: signDemoToken(account.role) });
+      return response({ token: signDemoToken(account) });
     }
     case "POST /auth/logout":
+      passwordChallenges.delete(sessionId);
+      revokedSessions.add(sessionId);
       return response(null, 204);
+    case "POST /account/password/code": {
+      allow("MASTER", "PrefeituraVendedor", "COOPERATIVA");
+      const challenge = { id: crypto.randomUUID(), expiresAt: Date.now() + 10 * 60_000 };
+      passwordChallenges.set(sessionId, challenge);
+      return response({ challengeId: challenge.id, expiresAt: new Date(challenge.expiresAt).toISOString() });
+    }
+    case "POST /account/password/verify-code": {
+      allow("MASTER", "PrefeituraVendedor", "COOPERATIVA");
+      const challenge = passwordChallenges.get(sessionId);
+      if (!challenge || challenge.id !== body.challengeId || challenge.resetToken || challenge.expiresAt <= Date.now() || body.code !== demoCode) {
+        return fail("Código inválido ou expirado.");
+      }
+      challenge.resetToken = crypto.randomUUID();
+      return response({ resetToken: challenge.resetToken });
+    }
+    case "POST /account/password/change": {
+      allow("MASTER", "PrefeituraVendedor", "COOPERATIVA");
+      const account = demoAccounts.find((account) => account.role === role);
+      const challenge = passwordChallenges.get(sessionId);
+      if (!account || !challenge?.resetToken || challenge.resetToken !== body.resetToken || challenge.expiresAt <= Date.now()) {
+        return fail("Verificação inválida ou expirada.");
+      }
+      if (typeof body.password !== "string" || body.password.length < 8 || body.password !== body.passwordConfirmation || new TextEncoder().encode(body.password).length > 72) {
+        return fail("Preencha e confirme uma nova senha válida.");
+      }
+      demoPasswords.set(account.email, body.password);
+      passwordChallenges.delete(sessionId);
+      for (const [id, email] of demoSessions) {
+        if (email === account.email && id !== sessionId) {
+          revokedSessions.add(id);
+          passwordChallenges.delete(id);
+        }
+      }
+      return response(null, 204);
+    }
     case "GET /account/sessions":
+      allow("MASTER", "PrefeituraVendedor", "COOPERATIVA");
       return response({
         sessions: [{ id: "sessao-demo", createdAt: now(), browser: "Navegador", device: "Computador", city: "São Paulo", region: "SP", status: "CURRENT" }],
         pagination: { totalPages: 1 },

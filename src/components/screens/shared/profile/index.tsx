@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { BookOpen, Camera, Clock3, KeyRound, UserCircle2, UserRoundPen } from "lucide-react";
+import { BookOpen, Camera, ChevronLeft, ChevronRight, Clock3, KeyRound, MapPin, Monitor, UserCircle2, UserRoundPen } from "lucide-react";
 import { getStoredAvatarUrl, getStoredUserEmail, getStoredUserName, setStoredAvatarUrl } from "@/app/service/api/auth-session";
 import { apiError, http } from "@/app/service/api/http";
 import { authService } from "@/app/service/api/authService";
@@ -11,6 +11,8 @@ import { useApiResource } from "@/app/service/api/use-api-resource";
 import { FormInput } from "@/components/ui/form-input";
 import { useGlobalModalStore } from "@/stores/useGlobalModalStore";
 import ErrorModal from "@/components/ui/modal/ErrorModal";
+import { demoEnabled } from "@/app/service/api/demo-config";
+import { ChangePassword } from "./change-password";
 
 type ProfileTab = "access" | "password" | "data" | "terms";
 const tabs = [
@@ -32,8 +34,6 @@ type ProfilePageProps = {
 
 export const ProfilePage = ({ roleLabel = "Master" }: ProfilePageProps) => {
   const router = useRouter();
-  const [page, setPage] = useState(1);
-  const history = useApiResource<History>("account/sessions?page=" + page);
   const [tab, setTab] = useState<ProfileTab>("access");
   const [preview, setPreview] = useState<string | null>(() => getStoredAvatarUrl());
   const [logoutOpen, setLogoutOpen] = useState(false);
@@ -90,42 +90,9 @@ export const ProfilePage = ({ roleLabel = "Master" }: ProfilePageProps) => {
           {profileTabs.map(({ id, label, icon: Icon }) => <button key={id} onClick={() => setTab(id)} className={`mb-2 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold last:mb-0 ${tab === id ? "bg-emerald-600 text-white shadow-md" : "text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800"}`}><Icon size={18} />{label}</button>)}
         </nav>
 
-        <article className="min-h-[430px] rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.14)] sm:p-8">
-          {tab === "access" && (
-            <section>
-              <h4 className="text-2xl font-bold">Histórico de acesso</h4>
-              {!history?.data ? (
-                <p className="mt-4" role={history?.error ? "alert" : "status"}>{history?.error ?? "Carregando sessões..."}</p>
-              ) : (
-                <>
-                  {history.data.sessions.length === 0 && <p className="mt-4">Nenhuma sessão encontrada.</p>}
-                  <ul className="mt-6 divide-y divide-slate-200">
-                    {history.data.sessions.map((session) => (
-                      <li key={session.id} className="grid gap-2 py-4 text-sm sm:grid-cols-4">
-                        <strong>{new Date(session.createdAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</strong>
-                        <span>{[session.browser, session.device].filter(Boolean).join(" · ") || "Dispositivo indisponível"}</span>
-                        <span>{[session.city, session.region].filter(Boolean).join(", ") || "Local indisponível"}</span>
-                        <span>{sessionStatus[session.status]}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="mt-4 flex items-center gap-4 text-sm">
-                    <button disabled={page === 1} className="disabled:opacity-50" onClick={() => setPage(page - 1)}>Anterior</button>
-                    <span>Página {page}</span>
-                    <button disabled={page >= history.data.pagination.totalPages} className="disabled:opacity-50" onClick={() => setPage(page + 1)}>Próxima</button>
-                  </div>
-                </>
-              )}
-            </section>
-          )}
-
-          {tab === "password" && (
-            <section className="space-y-4">
-              <h4 className="text-2xl font-bold">Alterar senha</h4>
-              <p>Use o código enviado ao seu e-mail para definir uma nova senha.</p>
-              <a href="/Auth/ForgotPassword" className="inline-block rounded-xl bg-emerald-700 px-5 py-3 text-sm font-semibold text-white">Redefinir senha</a>
-            </section>
-          )}
+        <article className="self-start rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.14)] sm:p-8">
+          {tab === "access" && <AccessHistory />}
+          {tab === "password" && <ChangePassword email={userEmail} managed={roleLabel === "Master" && !demoEnabled} />}
 
           {tab === "data" && (
             <section>
@@ -157,6 +124,65 @@ export const ProfilePage = ({ roleLabel = "Master" }: ProfilePageProps) => {
 export const MasterProfilePage = () => <ProfilePage roleLabel="Master" />;
 
 export default MasterProfilePage;
+
+const accessDate = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: "America/Sao_Paulo" });
+const historyButton = "inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1.5 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50 dark:hover:bg-slate-800 sm:px-3";
+
+function AccessHistory() {
+  const [page, setPage] = useState(1);
+  const history = useApiResource<History>("account/sessions?page=" + page);
+  const data = history?.data;
+
+  return (
+    <section className="space-y-4">
+      <h4 className="flex items-center gap-2.5 text-2xl font-bold">
+        <Clock3 size={22} aria-hidden="true" className="shrink-0 text-emerald-700 dark:text-emerald-300" />
+        Histórico de acesso
+      </h4>
+      {!data ? (
+        <p role={history?.error ? "alert" : "status"} className="text-sm text-slate-600">{history?.error ?? "Carregando sessões..."}</p>
+      ) : data.sessions.length === 0 ? (
+        <p className="text-sm text-slate-600">Nenhuma sessão encontrada.</p>
+      ) : (
+        <ul className="space-y-3">
+          {data.sessions.map((session) => (
+            <li key={session.id} className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="flex items-center gap-2 font-semibold"><Monitor size={16} aria-hidden="true" className="shrink-0" />
+                  {[session.browser, session.device].filter(Boolean).join(" · ") || "Dispositivo indisponível"}
+                </p>
+                <span className={session.status === "CURRENT"
+                  ? "rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200"
+                  : "rounded-full border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-600"}>
+                  {sessionStatus[session.status]}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-600">
+                <time dateTime={session.createdAt} className="inline-flex items-center gap-1.5">
+                  <Clock3 size={14} aria-hidden="true" />{accessDate.format(new Date(session.createdAt))}
+                </time>
+                <span className="inline-flex items-center gap-1.5">
+                  <MapPin size={14} aria-hidden="true" />{[session.city, session.region].filter(Boolean).join(", ") || "Local indisponível"}
+                </span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      {(page > 1 || (data?.pagination.totalPages ?? 0) > 1) && (
+        <nav aria-label="Paginação do histórico" className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+          <button type="button" disabled={page === 1} onClick={() => setPage(page - 1)} className={historyButton + " justify-self-start"}>
+            <ChevronLeft size={15} aria-hidden="true" />Anterior
+          </button>
+          <span className="text-sm">Página {page}</span>
+          <button type="button" disabled={!data || page >= data.pagination.totalPages} onClick={() => setPage(page + 1)} className={historyButton + " justify-self-end"}>
+            Próxima<ChevronRight size={15} aria-hidden="true" />
+          </button>
+        </nav>
+      )}
+    </section>
+  );
+}
 
 function CurrentTerm() {
   const term = useApiResource<{ term: { title: string | null; text: string } }>("terms/current");
