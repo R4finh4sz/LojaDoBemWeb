@@ -87,7 +87,7 @@ export const ProfilePage = ({ roleLabel = "Master" }: ProfilePageProps) => {
 
       <div className="grid gap-6 lg:grid-cols-[250px_1fr]">
         <nav className="h-fit rounded-3xl border border-slate-200 bg-white p-3 shadow-[0_18px_48px_rgba(15,23,42,0.14)]">
-          {profileTabs.map(({ id, label, icon: Icon }) => <button key={id} onClick={() => setTab(id)} className={`mb-2 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold last:mb-0 ${tab === id ? "bg-emerald-600 text-white shadow-md" : "text-slate-600 hover:bg-slate-100"}`}><Icon size={18} />{label}</button>)}
+          {profileTabs.map(({ id, label, icon: Icon }) => <button key={id} onClick={() => setTab(id)} className={`mb-2 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold last:mb-0 ${tab === id ? "bg-emerald-600 text-white shadow-md" : "text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800"}`}><Icon size={18} />{label}</button>)}
         </nav>
 
         <article className="min-h-[430px] rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.14)] sm:p-8">

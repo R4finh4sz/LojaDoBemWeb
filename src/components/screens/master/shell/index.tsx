@@ -108,7 +108,7 @@ export const MasterShell = ({ children }: MasterShellProps) => {
             })}
             <div className="my-2 border-t border-slate-200" />
             <Link href="/main/Master/profile" title={sidebarCollapsed ? "Perfil" : undefined} aria-label="Perfil" onClick={() => setMenuOpen(false)} className={`flex items-center overflow-hidden border-l-2 py-3 text-sm font-medium transition ${sidebarCollapsed ? "lg:justify-center lg:px-2" : "gap-3 px-4"} ${pathname === "/main/Master/profile" ? "border-emerald-700 bg-emerald-50 text-emerald-900 dark:bg-slate-800 dark:text-emerald-300" : "border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-950"}`}><UserCircle2 className="shrink-0" size={18} /><span className={`whitespace-nowrap transition-[max-width,opacity] duration-200 ${sidebarCollapsed ? "lg:max-w-0 lg:opacity-0" : "lg:max-w-52 lg:opacity-100"}`}>Perfil</span></Link>
-            <button type="button" onClick={() => setSidebarCollapsed((value) => !value)} title={sidebarCollapsed ? "Expandir menu" : "Recolher menu"} aria-label={sidebarCollapsed ? "Expandir menu lateral" : "Recolher menu lateral"} className="mt-3 hidden h-10 w-full shrink-0 items-center justify-center gap-2 overflow-hidden rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-500 transition hover:bg-slate-50 hover:text-slate-900 lg:flex">{sidebarCollapsed ? <ChevronRight size={18} /> : <><ChevronLeft className="shrink-0" size={18} /><span className="whitespace-nowrap">Recolher menu</span></>}</button>
+            <button type="button" onClick={() => setSidebarCollapsed((value) => !value)} title={sidebarCollapsed ? "Expandir menu" : "Recolher menu"} aria-label={sidebarCollapsed ? "Expandir menu lateral" : "Recolher menu lateral"} className="mt-3 hidden h-10 w-full shrink-0 items-center justify-center gap-2 overflow-hidden rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-500 transition hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 lg:flex">{sidebarCollapsed ? <ChevronRight size={18} /> : <><ChevronLeft className="shrink-0" size={18} /><span className="whitespace-nowrap">Recolher menu</span></>}</button>
           </nav>
         </aside>
 
@@ -121,7 +121,7 @@ export const MasterShell = ({ children }: MasterShellProps) => {
               <ThemeToggle compact />
               <Link
                 href="/main/Master/profile"
-                className="group flex items-center gap-2 rounded-xl px-1.5 py-1 transition hover:bg-slate-50"
+                className="group flex items-center gap-2 rounded-xl px-1.5 py-1 transition hover:bg-slate-50 dark:hover:bg-slate-800"
               >
                 <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-sm font-bold text-white">
                   {avatarUrl ? (
