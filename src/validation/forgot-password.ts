@@ -26,10 +26,7 @@ export const forgotPasswordResetSchema = z
     password: z
       .string()
       .min(8, "A senha deve ter no mínimo 8 caracteres")
-      .regex(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-        "A senha deve conter letras maiúsculas, minúsculas e números",
-      ),
+      .max(128, "Senha muito longa"),
     confirmPassword: z.string().min(1, "Confirme sua senha"),
   })
   .refine((data) => data.password === data.confirmPassword, {

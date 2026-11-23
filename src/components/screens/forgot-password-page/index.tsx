@@ -294,29 +294,9 @@ export const ForgotPasswordPage = () => {
                   />
 
                   <div className="text-xs text-slate-600">
-                    A senha deve conter:
-                    <ul className="mt-2 space-y-1">
-                      <li
-                        className={`${password?.length >= 8 ? "text-emerald-700" : "text-slate-500"}`}
-                      >
-                        • No mínimo 8 caracteres
-                      </li>
-                      <li
-                        className={`${/[a-z]/.test(password || "") ? "text-emerald-700" : "text-slate-500"}`}
-                      >
-                        • Letras minúsculas
-                      </li>
-                      <li
-                        className={`${/[A-Z]/.test(password || "") ? "text-emerald-700" : "text-slate-500"}`}
-                      >
-                        • Letras maiúsculas
-                      </li>
-                      <li
-                        className={`${/\d/.test(password || "") ? "text-emerald-700" : "text-slate-500"}`}
-                      >
-                        • Números
-                      </li>
-                    </ul>
+                    <p className={password?.length >= 8 && password.length <= 128 ? "text-emerald-700" : "text-slate-500"}>
+                      Use de 8 a 128 caracteres.
+                    </p>
                   </div>
 
                   <div className="flex gap-3 pt-4">

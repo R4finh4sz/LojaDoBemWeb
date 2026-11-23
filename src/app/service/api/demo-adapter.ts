@@ -10,7 +10,7 @@ const demoPasswords = new Map<string, string>();
 const demoSessions = new Map<string, string>();
 const revokedSessions = new Set<string>();
 const passwordChallenges = new Map<string, { id: string; expiresAt: number; resetToken?: string }>();
-const demoProfiles = new Map<string, { email: string; jobTitle: string | null; profilePhoto: string | null }>();
+const demoProfiles = new Map<string, { email: string; jobTitle: string | null; profilePhoto: string | null; twoFactorEnabled: boolean }>();
 function signDemoToken(account: DemoAccount) {
   const sid = crypto.randomUUID();
   demoSessions.set(sid, account.email);
@@ -97,14 +97,17 @@ export const demoAdapter: AxiosAdapter = async (config) => {
   function accountProfile() {
     const account = demoAccounts.find((account) => account.role === role);
     if (!account) return fail("Acesso indisponível para este perfil.", 403);
-    return demoProfiles.get(account.email) ?? { email: account.email, jobTitle: null, profilePhoto: null };
+    return demoProfiles.get(account.email) ?? { email: account.email, jobTitle: null, profilePhoto: null, twoFactorEnabled: true };
   }
 
   switch (route) {
     case "POST /auth/login": {
       const account = demoAccounts.find(({ email }) => email === String(body.email).trim().toLowerCase());
       if (!account || body.password !== (demoPasswords.get(account.email) ?? demoPassword)) return fail("Credenciais de demonstração inválidas.", 401);
-      return response({ challengeId: account.email });
+      if (demoProfiles.get(account.email)?.twoFactorEnabled === false) {
+        return response({ twoFactorRequired: false, token: signDemoToken(account) });
+      }
+      return response({ twoFactorRequired: true, challengeId: account.email });
     }
     case "POST /auth/2fa/verify": {
       const account = demoAccounts.find(({ email }) => email === body.challengeId);
@@ -152,6 +155,13 @@ export const demoAdapter: AxiosAdapter = async (config) => {
     }
     case "GET /account/profile":
       return response(accountProfile());
+    case "PATCH /account/two-factor": {
+      const profile = accountProfile();
+      if (typeof body.enabled !== "boolean") return fail("Informe o estado do 2FA.");
+      if (body.password !== (demoPasswords.get(profile.email) ?? demoPassword)) return fail("Senha atual inválida", 403);
+      demoProfiles.set(profile.email, { ...profile, twoFactorEnabled: body.enabled });
+      return response({ twoFactorEnabled: body.enabled });
+    }
     case "PATCH /account/profile": {
       const profile = accountProfile();
       if (Object.keys(body).length === 0 || Object.keys(body).some((key) => key !== "jobTitle" && key !== "profilePhoto")) {

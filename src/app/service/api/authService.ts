@@ -1,9 +1,13 @@
 import { http } from "./http";
 import { clearAuthSession } from "./auth-session";
 
+type LoginResponse =
+  | { twoFactorRequired: false; token: string }
+  | { twoFactorRequired?: true; challengeId: string };
+
 export const authService = {
   async login(payload: { email: string; password: string }) {
-    const { data } = await http.post<{ challengeId: string }>("auth/login", payload);
+    const { data } = await http.post<LoginResponse>("auth/login", payload);
     return data;
   },
   async verifyCode(payload: { challengeId: string; code: string }) {

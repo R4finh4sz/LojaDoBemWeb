@@ -113,7 +113,7 @@ export function ChangePassword({ email, managed }: { email: string; managed: boo
           {step.kind === "password" && (
             <form onSubmit={save} className="space-y-4">
               <FormInput id="profile-new-password" label="Nova senha" name="password" type="password" autoComplete="new-password"
-                helpText="Use pelo menos 8 caracteres, com letras maiúsculas, minúsculas e números." required disabled={busy} />
+                helpText="Use pelo menos 8 caracteres e no máximo 72 bytes." required disabled={busy} />
               <FormInput id="profile-confirm-password" label="Confirmar nova senha" name="confirmPassword" type="password" autoComplete="new-password" required disabled={busy} />
               <div className="flex flex-wrap gap-3">
                 <button type="submit" className={primary} disabled={busy}>

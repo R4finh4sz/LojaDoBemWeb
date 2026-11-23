@@ -6,7 +6,7 @@ import { useState, type FormEvent } from "react";
 import { apiError, http } from "@/app/service/api/http";
 import { FormInput } from "@/components/ui/form-input";
 
-export type AccountProfile = { email: string; jobTitle: string | null; profilePhoto: string | null };
+export type AccountProfile = { email: string; jobTitle: string | null; profilePhoto: string | null; twoFactorEnabled: boolean };
 
 const imageTypes = ["image/jpeg", "image/png", "image/webp"];
 const primary = "rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-50";
@@ -47,11 +47,13 @@ export function ProfileDetails({ profile, roleLabel, onSaved }: {
   const [saving, setSaving] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [updatingTwoFactor, setUpdatingTwoFactor] = useState(false);
+  const [twoFactorMessage, setTwoFactorMessage] = useState("");
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
   const preview = photo ?? profile.profilePhoto;
   const titleChanged = jobTitle.trim() !== (profile.jobTitle ?? "");
-  const busy = preparing || saving;
+  const busy = preparing || saving || updatingTwoFactor;
 
   async function selectPhoto(file?: File) {
     if (!file) return;
@@ -107,6 +109,30 @@ export function ProfileDetails({ profile, roleLabel, onSaved }: {
     }
   }
 
+  async function updateTwoFactor(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (busy) return;
+    const form = event.currentTarget;
+    const password = new FormData(form).get("password");
+    if (typeof password !== "string" || !password || password.length > 128) return;
+    setUpdatingTwoFactor(true);
+    setTwoFactorMessage("");
+    setError("");
+    try {
+      const { data } = await http.patch<Pick<AccountProfile, "twoFactorEnabled">>("account/two-factor", {
+        enabled: !profile.twoFactorEnabled,
+        password,
+      });
+      onSaved({ ...profile, twoFactorEnabled: data.twoFactorEnabled });
+      form.reset();
+      setTwoFactorMessage(data.twoFactorEnabled ? "Verificação em duas etapas ativada." : "Verificação em duas etapas desativada.");
+    } catch (error) {
+      setError(apiError(error, "Não foi possível alterar a verificação em duas etapas."));
+    } finally {
+      setUpdatingTwoFactor(false);
+    }
+  }
+
   return (
     <section className="space-y-5">
       <h4 className="text-2xl font-bold">Meus dados</h4>
@@ -143,6 +169,18 @@ export function ProfileDetails({ profile, roleLabel, onSaved }: {
         </div>
       </form>
       {saved && <p role="status" className="text-sm text-emerald-800 dark:text-emerald-300">Dados atualizados.</p>}
+      {typeof profile.twoFactorEnabled === "boolean" && (
+        <form onSubmit={updateTwoFactor} className="space-y-3 border-t border-slate-200 pt-5">
+          <h5 className="font-semibold">Verificação em duas etapas</h5>
+          <p className="text-sm">Status atual: {profile.twoFactorEnabled ? "ativada" : "desativada"}</p>
+          <FormInput id="profile-two-factor-password" name="password" label="Senha atual" type="password"
+            autoComplete="current-password" maxLength={128} required disabled={busy} />
+          <button type="submit" className={secondary} disabled={busy}>
+            {updatingTwoFactor ? "Salvando..." : profile.twoFactorEnabled ? "Desativar verificação" : "Ativar verificação"}
+          </button>
+          {twoFactorMessage && <p role="status" className="text-sm text-emerald-800 dark:text-emerald-300">{twoFactorMessage}</p>}
+        </form>
+      )}
       {error && <p role="alert" className="text-sm text-red-700 dark:text-red-300">{error}</p>}
     </section>
   );
