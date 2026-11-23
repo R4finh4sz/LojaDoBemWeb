@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { BarChart3, ChevronLeft, ChevronRight, ClipboardCheck, LogOut, Menu, PackagePlus, Pencil, ShoppingBag, UserCircle2, UserPlus } from "lucide-react";
+import { BarChart3, ChevronLeft, ChevronRight, ClipboardCheck, FileSearch, LogOut, Menu, PackagePlus, Pencil, ShoppingBag, UserCircle2, UserPlus } from "lucide-react";
 import { authService } from "@/app/service/api/authService";
 import AuthGuard from "@/components/ui/auth-guard";
 import { getStoredAvatarUrl, getStoredUserName } from "@/app/service/api/auth-session";
@@ -14,13 +14,15 @@ import ErrorModal from "@/components/ui/modal/ErrorModal";
 import { CitizenRegistration } from "@/components/screens/admin/citizen-registration";
 import { CreateProduct, Inventory, MunicipalDashboard, ValidatePickup } from "@/components/screens/admin/municipal";
 import { AdminStore } from "@/components/screens/admin/store";
+import { SaleHistory } from "@/components/screens/admin/store/sale-history";
 import reciclaLogo from "@/assets/Images/LogoImage.png";
 
-type AdminTab = "overview" | "citizen" | "store" | "items" | "catalog" | "withdrawal" | "profile";
+type AdminTab = "overview" | "citizen" | "store" | "sales" | "items" | "catalog" | "withdrawal" | "profile";
 const tabs = [
   { id: "overview", label: "Visão geral", icon: BarChart3 },
   { id: "citizen", label: "Pré-cadastrar munícipe", icon: UserPlus },
   { id: "store", label: "Loja", icon: ShoppingBag },
+  { id: "sales", label: "Histórico de vendas", icon: FileSearch },
   { id: "items", label: "Cadastrar item", icon: PackagePlus },
   { id: "catalog", label: "Estoque", icon: Pencil },
   { id: "withdrawal", label: "Confirmar retirada", icon: ClipboardCheck },
@@ -29,6 +31,7 @@ const tabs = [
 export const AdminHome = () => {
   const router = useRouter();
   const [tab, setTab] = useState<AdminTab>("overview");
+  const [saleProtocol, setSaleProtocol] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
@@ -81,7 +84,11 @@ export const AdminHome = () => {
               <div className="min-w-0">
                 {tab === "overview" && <MunicipalDashboard />}
                 {tab === "citizen" && <CitizenRegistration />}
-                {tab === "store" && <AdminStore />}
+                {tab === "store" && <AdminStore onViewProtocol={(protocol) => {
+                  setSaleProtocol(protocol);
+                  setTab("sales");
+                }} />}
+                {tab === "sales" && <SaleHistory initialProtocol={saleProtocol} />}
                 {tab === "items" && <CreateProduct />}
                 {tab === "catalog" && <Inventory />}
                 {tab === "withdrawal" && <ValidatePickup />}

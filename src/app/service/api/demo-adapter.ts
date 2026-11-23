@@ -58,6 +58,10 @@ const products = [
 type Cart = { id: string; buyerId: string; expiresAt: string; items: { productId: string; quantity: number; product: typeof products[number] }[] };
 const carts = new Map<string, Cart>();
 const sales = new Map<string, { saleId: string; total: string; ecoCoinBalance: string }>();
+const completedSales: {
+  id: string; cartId: string; quantity: number; unitPrice: string; totalPrice: string;
+  completedAt: string; createdAt: string; status: "COMPLETED"; product: { name: string };
+}[] = [];
 const credits = new Map<string, { auditId: string; ecoCoinBalance: string }>();
 let pointsDistributed = 0;
 let pickupCompleted = false;
@@ -175,6 +179,8 @@ export const demoAdapter: AxiosAdapter = async (config) => {
       if (pickupCompleted || body.code.toUpperCase() !== "ABCD1234EF56") return fail("Código inválido ou já usado. Código de teste: ABCD1234EF56.", 404);
       pickupCompleted = true;
       return response({ redemption: { id: "retirada-demo", product: products[0] } });
+    case "GET /store/admin/redemptions":
+      return response({ redemptions: completedSales });
     case "GET /store/admin/carts":
       return response({ carts: [...carts.values()] });
     case "POST /store/admin/carts": {
@@ -217,6 +223,12 @@ export const demoAdapter: AxiosAdapter = async (config) => {
     buyer.balance -= total;
     cart.items.forEach(({ product, quantity }) => { product.quantity -= quantity; });
     const receipt = { saleId: cart.id, total: money(total), ecoCoinBalance: money(buyer.balance) };
+    const completedAt = now();
+    completedSales.push(...cart.items.map(({ product, quantity }) => ({
+      id: crypto.randomUUID(), cartId: cart.id, quantity, unitPrice: product.price,
+      totalPrice: money(Math.round(Number(product.price) * 100) * quantity),
+      completedAt, createdAt: completedAt, status: "COMPLETED" as const, product: { name: product.name },
+    })));
     sales.set(id, receipt);
     carts.delete(id);
     return response(receipt, 201);

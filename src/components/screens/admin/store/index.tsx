@@ -2,10 +2,11 @@
 
 import { isAxiosError } from "axios";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Hash, Wallet } from "lucide-react";
+import { Hash, ShoppingBag, Wallet } from "lucide-react";
 import { apiError, http } from "@/app/service/api/http";
 import { FormInput } from "@/components/ui/form-input";
 import ErrorModal from "@/components/ui/modal/ErrorModal";
+import Modal from "@/components/ui/modal/Modal";
 import SuccessModal from "@/components/ui/modal/SuccessModal";
 import { inputMasks } from "@/utils/input-masks";
 import { isValidCpf } from "@/validation/citizen-registration";
@@ -17,16 +18,18 @@ type Cart = { id: string; buyerId: string; expiresAt: string; items: { productId
 type Receipt = { saleId: string; total: string; ecoCoinBalance: string };
 const cartsUrl = "store/admin/carts";
 
-export function AdminStore() {
+export function AdminStore({ onViewProtocol }: { onViewProtocol: (protocol: string) => void }) {
   const [buyer, setBuyer] = useState<Buyer | null>(null);
   const [cpf, setCpf] = useState("");
   const [cart, setCart] = useState<Cart | null>(null);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [checkoutUnconfirmed, setCheckoutUnconfirmed] = useState(false);
+  const [confirmCheckout, setConfirmCheckout] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [addedItem, setAddedItem] = useState<{ name: string } | null>(null);
   const inFlight = useRef(false);
+  const total = cart?.items.reduce((sum, item) => sum + Math.round(Number(item.product.price) * 100) * item.quantity, 0) ?? 0;
 
   useEffect(() => {
     if (!addedItem) return;
@@ -92,7 +95,8 @@ export function AdminStore() {
   }
 
   async function checkout() {
-    if (!cart) return;
+    if (!cart?.items.length || inFlight.current) return;
+    setConfirmCheckout(false);
     setCheckoutUnconfirmed(true);
     await perform(async () => {
       const { data } = await http.post<Receipt>(cartsUrl + "/" + cart.id + "/checkout");
@@ -114,6 +118,18 @@ export function AdminStore() {
 
   return (
     <section className="space-y-6">
+      <Modal open={confirmCheckout} onClose={() => setConfirmCheckout(false)}>
+        <div className="space-y-4">
+          <ShoppingBag size={24} aria-hidden="true" className="text-emerald-700 dark:text-emerald-300" />
+          <h3 className="text-xl font-bold text-slate-900">Finalizar venda?</h3>
+          <p className="text-sm text-slate-600">Confirme o débito de <strong>{coins(total / 100)} ecocoins</strong> do saldo do munícipe.</p>
+          <div className="flex flex-wrap justify-end gap-3">
+            <button type="button" onClick={() => setConfirmCheckout(false)}
+              className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-800">Voltar</button>
+            <button type="button" onClick={checkout} className={action}>Confirmar venda</button>
+          </div>
+        </div>
+      </Modal>
       <SuccessModal open={!!addedItem} onClose={() => setAddedItem(null)}
         title="Item adicionado ao carrinho" message={addedItem?.name} />
       <ErrorModal open={!cart && !!error} onClose={closeLookupFeedback}
@@ -127,6 +143,7 @@ export function AdminStore() {
           <h3 className="text-xl font-bold">Venda concluída</h3>
           <p>Protocolo {receipt.saleId}</p>
           <p>{coins(receipt.total)} ecocoins debitados · Saldo restante de {coins(receipt.ecoCoinBalance)} ecocoins</p>
+          <button type="button" className={action} onClick={() => onViewProtocol(receipt.saleId)}>Ver no histórico</button>
         </div>
       )}
       {!cart ? (
@@ -139,7 +156,7 @@ export function AdminStore() {
           <button className={action} disabled={busy || !!buyer || !!error}>{busy ? "Consultando..." : "Consultar"}</button>
         </form>
       ) : (
-        <div className={card}>
+        <div className={card} inert={confirmCheckout}>
           <header className="flex flex-wrap items-start justify-between gap-3">
             <h3 className="pt-2 text-xl font-bold">Carrinho</h3>
             <dl className="ml-auto flex max-w-full flex-wrap justify-end gap-2">
@@ -181,8 +198,11 @@ export function AdminStore() {
             )}
           </section>
           <div className="flex flex-wrap items-center gap-3 py-2">
-            <p className="w-full font-semibold sm:w-auto">Total de {coins(cart.items.reduce((total, item) => total + Number(item.product.price) * item.quantity, 0))} ecocoins</p>
-            <button type="button" className={action} disabled={busy || !cart.items.length} onClick={checkout}>
+            <p className="w-full font-semibold sm:w-auto">Total de {coins(total / 100)} ecocoins</p>
+            <button type="button" className={action} disabled={busy || !cart.items.length} onClick={() => {
+              if (checkoutUnconfirmed) void checkout();
+              else setConfirmCheckout(true);
+            }}>
               {checkoutUnconfirmed ? "Confirmar resultado da venda" : "Finalizar venda"}
             </button>
             <button type="button" className="ml-auto rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/45" disabled={busy || checkoutUnconfirmed} onClick={() => void perform(async () => {
