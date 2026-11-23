@@ -53,7 +53,7 @@ export function MunicipalDashboard() {
             <p className="rounded-xl border border-dashed border-slate-200 px-4 py-5 text-sm text-slate-600">Nenhum pedido coletado.</p>
           ) : (
             <ul className="space-y-3">
-              {data.recentOrders.map(({ id, user, collectedAt, items }) => (
+              {data.recentOrders.slice(0, 3).map(({ id, user, collectedAt, items }) => (
                 <li key={id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                   <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
                     <p className="flex min-w-0 items-center gap-2 text-sm font-semibold">
@@ -80,7 +80,7 @@ export function MunicipalDashboard() {
           {!data.topItems.length && <p>Nenhum item retirado.</p>}
           {!!data.topItems.length && (
             <ol className="space-y-4">
-              {data.topItems.map(({ productId, productName, units, sharePercent }) => (
+              {data.topItems.slice(0, 3).map(({ productId, productName, units, sharePercent }) => (
                 <li key={productId}>
                   <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-sm">
                     <strong>{productName}</strong>

@@ -156,11 +156,18 @@ export const demoAdapter: AxiosAdapter = async (config) => {
   switch (route) {
     case "GET /store/admin/dashboard":
       return response({ ordersCollected: 12 + sales.size, usersServed: 8, pointsRedeemed: "2860.00",
-        recentOrders: [{ id: "pedido-demo", user: { name: "Munícipe de exemplo" }, collectedAt: now(),
-          items: [{ productId: "ecobag", name: "Ecobag", quantity: 2 }] }],
+        recentOrders: [
+          { id: "pedido-demo-1", user: { name: "Ana Paula da Silva" }, collectedAt: now(),
+            items: [{ productId: "ecobag", name: "Ecobag", quantity: 2 }] },
+          { id: "pedido-demo-2", user: { name: "Gabriel Santos Almeida" }, collectedAt: new Date(Date.now() - 25 * 60_000).toISOString(),
+            items: [{ productId: "garrafa", name: "Garrafa térmica", quantity: 1 }, { productId: "produto-demo-003", name: "Caneca de cerâmica", quantity: 1 }] },
+          { id: "pedido-demo-3", user: { name: "Juliana Ribeiro Costa" }, collectedAt: new Date(Date.now() - 55 * 60_000).toISOString(),
+            items: [{ productId: "produto-demo-003", name: "Caneca de cerâmica", quantity: 2 }] },
+        ],
         topItems: [
-          { productId: "ecobag", productName: "Ecobag", units: 15, sharePercent: 60 },
-          { productId: "garrafa", productName: "Garrafa térmica", units: 10, sharePercent: 40 },
+          { productId: "ecobag", productName: "Ecobag", units: 15, sharePercent: 50 },
+          { productId: "garrafa", productName: "Garrafa térmica", units: 10, sharePercent: 33.33 },
+          { productId: "produto-demo-003", productName: "Caneca de cerâmica", units: 5, sharePercent: 16.67 },
         ],
       });
     case "GET /store/admin/products": {
