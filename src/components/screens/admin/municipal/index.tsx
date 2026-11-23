@@ -214,48 +214,50 @@ export function Inventory() {
   }
 
   return (
-    <section className={card}>
-      <h3 className="text-xl font-bold">Estoque municipal</h3>
-      <form className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-4" onSubmit={(event) => {
-        event.preventDefault();
-        const values = new FormData(event.currentTarget);
-        setQuery({ search: String(values.get("search")).trim(), barcode: String(values.get("barcode")).trim(), stock: String(values.get("stock")) });
-        setPage(1);
-        setRefresh(refresh + 1);
-      }}>
-        <FormInput label="Nome ou descrição" name="search" maxLength={120} />
-        <FormInput label="Código de barras" name="barcode" />
-        <label className="text-sm">Estoque
-          <select name="stock" className="block w-full rounded-lg border border-slate-400 p-2">
-            <option value="">Todos</option><option value="available">Disponíveis</option><option value="out">Sem estoque</option>
-          </select>
-        </label>
-        <button className={action} disabled={busy}>Filtrar</button>
-      </form>
-      <button type="button" className={action} onClick={download}>Exportar para Excel</button>
-      {error && <p role="alert">{error}</p>}
-      {!result?.data ? <ResourceStatus error={result?.error} /> : (
-        <>
-          {!result.data.products.length && <p>Nenhum item encontrado.</p>}
-          {result.data.products.map((product) => (
-            <form key={product.id} onSubmit={(event) => void update(event, product)} className="grid items-end gap-3 border-t border-slate-200 pt-4 sm:grid-cols-[1fr_150px_auto]">
-              <div><strong>{product.name}</strong><p className="text-sm">{coins(product.price)} ecocoins · {product.quantity} un.</p></div>
-              <FormInput label="Novo estoque" id={"stock-" + product.id} name="quantity" type="number" min="0" max="2147483647" defaultValue={product.quantity} required />
-              <button className={action} disabled={busy}>Atualizar</button>
-            </form>
-          ))}
-          <nav aria-label="Paginação do estoque" className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-            <button type="button" className={action + " flex items-center gap-1 justify-self-start max-sm:px-2"} disabled={page === 1 || busy} onClick={() => setPage(page - 1)}>
-              <ChevronLeft size={16} aria-hidden="true" />Anterior
-            </button>
-            <span className="text-center text-sm" aria-live="polite">Página {page}</span>
-            <button type="button" className={action + " flex items-center gap-1 justify-self-end max-sm:px-2"} disabled={page >= result.data.pagination.totalPages || busy} onClick={() => setPage(page + 1)}>
-              Próxima<ChevronRight size={16} aria-hidden="true" />
-            </button>
-          </nav>
-        </>
-      )}
-    </section>
+    <div className="space-y-4">
+      <section className={card}>
+        <h3 className="text-xl font-bold">Estoque municipal</h3>
+        <form className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-4" onSubmit={(event) => {
+          event.preventDefault();
+          const values = new FormData(event.currentTarget);
+          setQuery({ search: String(values.get("search")).trim(), barcode: String(values.get("barcode")).trim(), stock: String(values.get("stock")) });
+          setPage(1);
+          setRefresh(refresh + 1);
+        }}>
+          <FormInput label="Nome ou descrição" name="search" maxLength={120} />
+          <FormInput label="Código de barras" name="barcode" />
+          <label className="text-sm">Estoque
+            <select name="stock" className="block w-full rounded-lg border border-slate-400 p-2">
+              <option value="">Todos</option><option value="available">Disponíveis</option><option value="out">Sem estoque</option>
+            </select>
+          </label>
+          <button className={action} disabled={busy}>Filtrar</button>
+        </form>
+        <button type="button" className={action} onClick={download}>Exportar para Excel</button>
+        {error && <p role="alert">{error}</p>}
+        {!result?.data ? <ResourceStatus error={result?.error} /> : (
+          <>
+            {!result.data.products.length && <p>Nenhum item encontrado.</p>}
+            {result.data.products.map((product) => (
+              <form key={product.id} onSubmit={(event) => void update(event, product)} className="grid items-end gap-3 border-t border-slate-200 pt-4 sm:grid-cols-[1fr_150px_auto]">
+                <div><strong>{product.name}</strong><p className="text-sm">{coins(product.price)} ecocoins · {product.quantity} un.</p></div>
+                <FormInput label="Novo estoque" id={"stock-" + product.id} name="quantity" type="number" min="0" max="2147483647" defaultValue={product.quantity} required />
+                <button className={action} disabled={busy}>Atualizar</button>
+              </form>
+            ))}
+          </>
+        )}
+      </section>
+      <nav aria-label="Paginação do estoque" className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+        <button type="button" className={action + " flex items-center gap-1 justify-self-start max-sm:px-2"} disabled={page === 1 || busy || !result} onClick={() => setPage(page - 1)}>
+          <ChevronLeft size={16} aria-hidden="true" />Anterior
+        </button>
+        <span className="text-center text-sm" aria-live="polite">Página {page}</span>
+        <button type="button" className={action + " flex items-center gap-1 justify-self-end max-sm:px-2"} disabled={!result?.data || page >= result.data.pagination.totalPages || busy} onClick={() => setPage(page + 1)}>
+          Próxima<ChevronRight size={16} aria-hidden="true" />
+        </button>
+      </nav>
+    </div>
   );
 }
 
