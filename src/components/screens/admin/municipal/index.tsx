@@ -8,6 +8,7 @@ import { FormInput } from "@/components/ui/form-input";
 
 export type Product = {
   id: string; name: string; description: string; price: string; quantity: number; barcode: string | null;
+  photo?: string;
 };
 export type InventoryData = { products: Product[]; pagination: { totalPages: number } };
 export const productUrl = "store/admin/products";
