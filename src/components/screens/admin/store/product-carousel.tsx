@@ -107,7 +107,6 @@ export function ProductCarousel({ disabled, quantityInCart, onAdd }: Props) {
       if (await cartActions.current.onAdd(product) && !controller.signal.aborted) {
         setSearch("");
         setLoadingMore(false);
-        setScanMessage(product.name + " adicionado ao carrinho.");
       }
     } catch (error) {
       if (!controller.signal.aborted) setScanMessage(apiError(error, "Não foi possível consultar o código de barras."));
@@ -161,18 +160,20 @@ export function ProductCarousel({ disabled, quantityInCart, onAdd }: Props) {
           {current.products.map((product) => {
             const remaining = product.quantity - quantityInCart(product.id);
             return (
-              <article key={product.id} className="flex w-48 shrink-0 snap-start flex-col gap-3 rounded-2xl border border-slate-200 p-3">
+              <article key={product.id} className="flex w-52 shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white sm:w-60">
                 <ProductPhoto photo={product.photo} />
-                <div className="flex-1">
-                  <h5 className="break-words text-sm font-bold">{product.name}</h5>
-                  <p className="mt-1 text-sm font-semibold text-emerald-800 dark:text-emerald-300">{coins(product.price)} ecocoins</p>
-                  <p className="mt-1 text-xs text-slate-600">{Math.max(0, remaining)} disponíveis para adicionar</p>
-                  {product.barcode && <p className="mt-1 break-all text-xs text-slate-600">Código {product.barcode}</p>}
+                <div className="flex flex-1 flex-col gap-3 p-4">
+                  <div className="flex-1 space-y-1">
+                    <h5 className="break-words text-sm font-bold">{product.name}</h5>
+                    <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">{coins(product.price)} ecocoins</p>
+                    <p className="text-xs text-slate-600">{Math.max(0, remaining)} disponíveis para adicionar</p>
+                    {product.barcode && <p className="break-all text-xs text-slate-600">Código {product.barcode}</p>}
+                  </div>
+                  <button type="button" disabled={disabled || scanning || remaining <= 0} onClick={() => void onAdd(product)}
+                    aria-label={"Adicionar " + product.name} className={action + " inline-flex items-center justify-center gap-1.5"}>
+                    <Plus size={16} aria-hidden="true" />Adicionar
+                  </button>
                 </div>
-                <button type="button" disabled={disabled || scanning || remaining <= 0} onClick={() => void onAdd(product)}
-                  aria-label={"Adicionar " + product.name} className={action + " inline-flex items-center justify-center gap-1.5"}>
-                  <Plus size={16} aria-hidden="true" />Adicionar
-                </button>
               </article>
             );
           })}
@@ -189,10 +190,10 @@ function ProductPhoto({ photo }: { photo?: string }) {
   const supported = photo && /^(https?:\/\/|\/(?!\/)|data:image\/(jpeg|png|webp);base64,)/i.test(photo);
 
   return (
-    <div className="relative grid h-24 place-items-center overflow-hidden rounded-xl bg-slate-50 text-slate-400 dark:bg-slate-800">
+    <div className="relative grid aspect-[4/3] place-items-center overflow-hidden border-b border-slate-200 bg-slate-50 text-slate-500 dark:bg-slate-800">
       {supported && failedPhoto !== photo ? (
-        <Image src={photo} alt="" fill unoptimized sizes="192px" className="object-contain" onError={() => setFailedPhoto(photo)} />
-      ) : <Package size={28} aria-hidden="true" />}
+        <Image src={photo} alt="" fill unoptimized sizes="(min-width: 640px) 240px, 208px" className="object-contain p-2" onError={() => setFailedPhoto(photo)} />
+      ) : <Package size={34} aria-hidden="true" />}
     </div>
   );
 }
