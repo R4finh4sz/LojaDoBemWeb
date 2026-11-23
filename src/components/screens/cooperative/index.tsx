@@ -2,7 +2,7 @@
 
 import { useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Coins, LogOut, Menu, Recycle, UserPlus, UserRound, X } from "lucide-react";
+import { ArrowRight, Coins, House, LogOut, Menu, Recycle, UserPlus, UserRound, X } from "lucide-react";
 import { authService } from "@/app/service/api/authService";
 import { demoCpf, demoEnabled } from "@/app/service/api/demo-config";
 import { apiError, http } from "@/app/service/api/http";
@@ -17,14 +17,30 @@ type CreditReceipt = { auditId: string; ecoCoinBalance: string };
 const button = "rounded-xl bg-emerald-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60";
 const format = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
 const sections = [
+  { id: "home", label: "Início", icon: House },
   { id: "credit", label: "Adicionar ecocoins", icon: Coins },
   { id: "resident", label: "Pré-cadastrar munícipe", icon: UserPlus },
   { id: "profile", label: "Perfil", icon: UserRound },
 ] as const;
 
+const serviceActions = [
+  {
+    id: "credit",
+    title: "Adicionar ecocoins",
+    description: "Informe o CPF do munícipe e a quantidade de ecocoins. Após confirmar, confira o protocolo e o saldo atualizado.",
+    icon: Coins,
+  },
+  {
+    id: "resident",
+    title: "Pré-cadastrar munícipe",
+    description: "Tenha em mãos os dados pessoais, o endereço e o termo assinado em PDF de até 2 MiB.",
+    icon: UserPlus,
+  },
+] as const;
+
 export default function CooperativeHome() {
   const router = useRouter();
-  const [tab, setTab] = useState<"credit" | "resident" | "profile">("credit");
+  const [tab, setTab] = useState<(typeof sections)[number]["id"]>("home");
   const [menuOpen, setMenuOpen] = useState(false);
   const [cpf, setCpf] = useState("");
   const [amount, setAmount] = useState("");
@@ -111,6 +127,34 @@ export default function CooperativeHome() {
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Painel da Cooperativa</h1>
           <ThemeToggle />
         </header>
+        {tab === "home" && (
+          <section aria-labelledby="service-heading" className="space-y-6">
+            <div>
+              <h2 id="service-heading" className="text-xl font-bold">Atendimento ao munícipe</h2>
+              <p className="mt-1 text-sm text-slate-600">Escolha o serviço para começar.</p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              {serviceActions.map(({ id, title, description, icon: Icon }) => (
+                <article key={id} className="flex flex-col items-start rounded-3xl border border-slate-200 bg-white p-6">
+                  <span className="mb-4 grid size-11 place-items-center rounded-xl bg-emerald-700 text-white">
+                    <Icon size={21} aria-hidden="true" />
+                  </span>
+                  <h3 className="text-lg font-bold">{title}</h3>
+                  <p className="mt-2 mb-5 text-sm leading-relaxed text-slate-600">{description}</p>
+                  <button type="button" onClick={() => setTab(id)} className={button + " mt-auto inline-flex items-center gap-2"}>
+                    {title}<ArrowRight size={16} aria-hidden="true" />
+                  </button>
+                </article>
+              ))}
+            </div>
+            <aside className="rounded-2xl border border-slate-200 bg-white p-5">
+              <h3 className="font-semibold">CPF não encontrado?</h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                Confira os dígitos com o munícipe. Se ele ainda não tiver cadastro, faça o pré-cadastro antes de tentar o crédito novamente.
+              </p>
+            </aside>
+          </section>
+        )}
         {tab === "credit" && (
           <section className="mt-6 grid gap-6 xl:grid-cols-2">
             <form onSubmit={credit} className="space-y-5 rounded-3xl border border-slate-200 bg-white p-6">
