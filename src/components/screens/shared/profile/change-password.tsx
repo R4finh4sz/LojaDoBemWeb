@@ -119,7 +119,6 @@ export function ChangePassword({ email, managed }: { email: string; managed: boo
                 <button type="submit" className={primary} disabled={busy}>
                   <KeyRound size={17} aria-hidden="true" />{busy ? "Salvando..." : "Salvar nova senha"}
                 </button>
-                <button type="button" className={secondary} onClick={requestCode} disabled={busy}>Solicitar novo código</button>
               </div>
             </form>
           )}
