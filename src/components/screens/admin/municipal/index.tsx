@@ -21,7 +21,7 @@ export function ResourceStatus({ error }: { error?: string }) {
 type Dashboard = {
   ordersCollected: number; usersServed: number; pointsRedeemed: string;
   recentOrders: { id: string; user: { name: string | null }; collectedAt: string; items: { productId: string; name: string; quantity: number }[] }[];
-  topItems: { productId: string; productName: string; units: number }[];
+  topItems: { productId: string; productName: string; units: number; sharePercent: number }[];
 };
 
 export function MunicipalDashboard() {
@@ -50,7 +50,21 @@ export function MunicipalDashboard() {
         <section className={card}>
           <h3 className="text-xl font-bold">Itens mais retirados</h3>
           {!data.topItems.length && <p>Nenhum item retirado.</p>}
-          {data.topItems.map((item) => <p key={item.productId}>{item.productName} · {item.units} un.</p>)}
+          {!!data.topItems.length && (
+            <ol className="space-y-4">
+              {data.topItems.map(({ productId, productName, units, sharePercent }) => (
+                <li key={productId}>
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-sm">
+                    <strong>{productName}</strong>
+                    <span className="text-slate-600">{units} un. · {coins(sharePercent)}%</span>
+                  </div>
+                  <div aria-hidden="true" className="mt-2 h-2.5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                    <div className="h-full rounded-full bg-emerald-600 dark:bg-emerald-400" style={{ width: `${sharePercent}%` }} />
+                  </div>
+                </li>
+              ))}
+            </ol>
+          )}
         </section>
       </div>
     </div>

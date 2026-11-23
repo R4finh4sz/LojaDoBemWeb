@@ -110,7 +110,10 @@ export const demoAdapter: AxiosAdapter = async (config) => {
       return response({ ordersCollected: 12 + sales.size, usersServed: 8, pointsRedeemed: "2860.00",
         recentOrders: [{ id: "pedido-demo", user: { name: "Munícipe de exemplo" }, collectedAt: now(),
           items: [{ productId: "ecobag", name: "Ecobag", quantity: 2 }] }],
-        topItems: [{ productId: "ecobag", productName: "Ecobag", units: 15 }],
+        topItems: [
+          { productId: "ecobag", productName: "Ecobag", units: 15, sharePercent: 60 },
+          { productId: "garrafa", productName: "Garrafa térmica", units: 10, sharePercent: 40 },
+        ],
       });
     case "GET /store/admin/products": {
       const search = (url.searchParams.get("search") ?? "").toLowerCase();
