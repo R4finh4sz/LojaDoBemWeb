@@ -171,7 +171,7 @@ export default function CooperativeHome() {
                 <dl className="space-y-3 text-sm">
                   <div><dt>Protocolo</dt><dd className="break-all font-semibold">{receipt.auditId}</dd></div>
                   <div><dt>CPF</dt><dd className="font-semibold">***.***.***-{receipt.cpf.slice(-2)}</dd></div>
-                  <div><dt>Quantidade creditada</dt><dd className="font-semibold">{format.format(Number(receipt.amount))}</dd></div>
+                  <div><dt>Quantidade creditada</dt><dd className="font-semibold">{format.format(Number(receipt.amount))} {Number(receipt.amount) === 1 ? "moeda" : "moedas"}</dd></div>
                   <div><dt>Novo saldo</dt><dd className="font-semibold">{format.format(Number(receipt.ecoCoinBalance))} ecocoins</dd></div>
                 </dl>
               </section>
