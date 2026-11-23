@@ -12,7 +12,7 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { inputMasks } from "@/utils/input-masks";
 import { isValidCpf } from "@/validation/citizen-registration";
 
-type CreditReceipt = { auditId: string; ecoCoinBalance: string };
+type CreditReceipt = { auditId: string; ecoCoinBalance: string; residentName?: string | null };
 const button = "rounded-xl bg-emerald-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60";
 const format = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
 const sections = [
@@ -153,6 +153,7 @@ export default function CooperativeHome() {
                 <h2 className="text-xl font-bold">Crédito realizado</h2>
                 <dl className="space-y-3 text-sm">
                   <div><dt>Protocolo</dt><dd className="break-all font-semibold">{receipt.auditId}</dd></div>
+                  <div><dt>Nome completo</dt><dd className="break-words font-semibold">{receipt.residentName || "Nome indisponível"}</dd></div>
                   <div><dt>CPF</dt><dd className="font-semibold">***.***.***-{receipt.cpf.slice(-2)}</dd></div>
                   <div><dt>Quantidade creditada</dt><dd className="font-semibold">{format.format(Number(receipt.amount))} {Number(receipt.amount) === 1 ? "moeda" : "moedas"}</dd></div>
                   <div><dt>Novo saldo</dt><dd className="font-semibold">{format.format(Number(receipt.ecoCoinBalance))} ecocoins</dd></div>

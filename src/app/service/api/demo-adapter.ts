@@ -64,7 +64,7 @@ const completedSales: {
   quantity: number; unitPrice: string; totalPrice: string;
   completedAt: string; createdAt: string; status: "COMPLETED"; product: { name: string };
 }[] = [];
-const credits = new Map<string, { auditId: string; ecoCoinBalance: string }>();
+const credits = new Map<string, { auditId: string; ecoCoinBalance: string; residentName: string }>();
 let pointsDistributed = 0;
 let pickupCompleted = false;
 let term = { title: "Termo de uso de demonstração", text: "Ambiente de demonstração com dados fictícios." };
@@ -138,7 +138,7 @@ export const demoAdapter: AxiosAdapter = async (config) => {
       const credited = Math.round(Number(body.amount) * 100);
       resident.balance += credited;
       pointsDistributed += credited;
-      const receipt = { auditId: crypto.randomUUID(), ecoCoinBalance: money(resident.balance) };
+      const receipt = { auditId: crypto.randomUUID(), ecoCoinBalance: money(resident.balance), residentName: resident.name };
       credits.set(key, receipt);
       return response(receipt, 201);
     }
