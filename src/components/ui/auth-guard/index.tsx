@@ -5,14 +5,16 @@ import { useRouter } from "next/navigation";
 import {
   clearAuthSession,
   getRoleHomePath,
-  getStoredRoleId,
+  getStoredRole,
   isAllowedRole,
+  getAccessToken,
+  type WebRole,
   isJwtValid,
 } from "@/app/service/api/auth-session";
 
 type AuthGuardProps = {
   children: React.ReactNode;
-  allowedRoles?: number | number[];
+  allowedRoles?: WebRole | WebRole[];
   redirectTo?: string;
   title?: string;
   message?: string;
@@ -32,27 +34,29 @@ export const AuthGuard = ({
   const [hasAccess, setHasAccess] = useState(false);
 
   useEffect(() => {
-    try {
-      const accessToken = window.localStorage.getItem("accessToken");
-      const validToken = isJwtValid(accessToken);
+    queueMicrotask(() => {
+      try {
+        const accessToken = getAccessToken();
+        const validToken = isJwtValid(accessToken);
 
-      if (!validToken) {
-        clearAuthSession();
-        setHasAccess(false);
-        router.replace(redirectTo);
-        return;
+        if (!validToken) {
+          clearAuthSession();
+          setHasAccess(false);
+          router.replace(redirectTo);
+          return;
+        }
+
+        const roleId = getStoredRole();
+        const allowed = isAllowedRole(allowedRoles, roleId);
+        setHasAccess(allowed);
+
+        if (!allowed) {
+          router.replace(getRoleHomePath(roleId));
+        }
+      } finally {
+        setIsChecking(false);
       }
-
-      const roleId = getStoredRoleId();
-      const allowed = isAllowedRole(allowedRoles, roleId);
-      setHasAccess(allowed);
-
-      if (!allowed) {
-        router.replace(getRoleHomePath(roleId));
-      }
-    } finally {
-      setIsChecking(false);
-    }
+    });
   }, [allowedRoles, redirectTo, router]);
 
   if (isChecking) {

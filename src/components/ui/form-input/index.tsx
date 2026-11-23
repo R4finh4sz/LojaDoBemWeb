@@ -1,4 +1,4 @@
-import { useState, type InputHTMLAttributes } from "react";
+import { useId, useState, type InputHTMLAttributes } from "react";
 import { FieldError } from "react-hook-form";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -15,6 +15,8 @@ export const FormInput = ({
   className,
   ...props
 }: FormInputProps) => {
+  const generatedId = useId();
+  const id = props.id ?? generatedId;
   const [showPassword, setShowPassword] = useState(false);
   const isPasswordField = props.type === "password";
   const inputType = isPasswordField && showPassword ? "text" : props.type;
@@ -23,7 +25,7 @@ export const FormInput = ({
     <div className="relative">
       {label && (
         <label
-          htmlFor={props.id}
+          htmlFor={id}
           className="mb-1.5 block text-sm font-medium text-slate-700"
         >
           {label}
@@ -32,6 +34,7 @@ export const FormInput = ({
       <div className="relative">
         <input
           {...props}
+          id={id}
           type={inputType}
           className={`w-full rounded-xl border px-4 py-3 text-sm text-slate-800 placeholder-slate-400 outline-none transition ${
             error

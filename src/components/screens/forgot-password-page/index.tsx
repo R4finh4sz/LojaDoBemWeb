@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import logoImage from "@/assets/Images/LogoImage.png";
 import { AuthHeader } from "@/components/ui/auth-header";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
+import { apiError, http } from "@/app/service/api/http";
+import { useGlobalModalStore } from "@/stores/useGlobalModalStore";
 import { FormInput } from "@/components/ui/form-input";
 import {
   forgotPasswordEmailSchema,
@@ -39,41 +41,55 @@ export const ForgotPasswordPage = () => {
     mode: "onChange",
   });
 
-  const handleStep1Submit = async (data: ForgotPasswordEmailInput) => {
+  const password = useWatch({ control: passwordForm.control, name: "password", defaultValue: "" });
+  const [challengeId, setChallengeId] = useState("");
+  const [resetToken, setResetToken] = useState("");
+  const showError = useGlobalModalStore((state) => state.showError);
+
+  const handleStep1Submit = async ({ email }: ForgotPasswordEmailInput) => {
     setLoading(true);
-
-    await new Promise((r) => setTimeout(r, 1500));
-    setLoading(false);
-
-    setSuccessMessage("Código enviado para seu e-mail");
-    setTimeout(() => setStep(2), 1500);
+    try {
+      const { data } = await http.post<{ challengeId: string }>("auth/password/forgot", { email });
+      setChallengeId(data.challengeId);
+      setResetToken("");
+      codeForm.reset();
+      setSuccessMessage("Se o e-mail estiver cadastrado, você receberá um código.");
+      setStep(2);
+    } catch (error) {
+      showError(apiError(error, "Não foi possível solicitar a recuperação."));
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleStep2Submit = async (data: ForgotPasswordCodeInput) => {
+  const handleStep2Submit = async ({ code }: ForgotPasswordCodeInput) => {
     setLoading(true);
-    setSuccessMessage("");
-
-    await new Promise((r) => setTimeout(r, 1500));
-    setLoading(false);
-
-    setTimeout(() => setStep(3), 1500);
+    try {
+      const { data } = await http.post<{ resetToken: string }>("auth/password/verify-code", { challengeId, code });
+      setResetToken(data.resetToken);
+      setSuccessMessage("");
+      setStep(3);
+    } catch (error) {
+      showError(apiError(error, "Não foi possível verificar o código."));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleStep3Submit = async (data: ForgotPasswordResetInput) => {
     setLoading(true);
-
-    await new Promise((r) => setTimeout(r, 1500));
-    setLoading(false);
-
-    setSuccessMessage("Senha alterada com sucesso! Redirecionando...");
-    setTimeout(() => {
-      window.location.href = "/Auth/Login";
-    }, 2000);
+    try {
+      await http.post("auth/password/reset", { resetToken, password: data.password, passwordConfirmation: data.confirmPassword });
+      window.location.replace("/Auth/Login");
+    } catch (error) {
+      showError(apiError(error, "Não foi possível redefinir a senha."));
+      setLoading(false);
+    }
   };
 
   const handleBack = () => {
     if (step > 1) {
-      setStep((step - 1) as Step);
+      setStep(1);
       setSuccessMessage("");
     }
   };
@@ -89,19 +105,6 @@ export const ForgotPasswordPage = () => {
     2: "Digite o código de 6 dígitos enviado para seu e-mail",
     3: "Crie uma nova senha segura para sua conta",
   };
-
-  useEffect(() => {
-    if (successMessage && step === 1) {
-      const timer = setTimeout(() => {
-        setSuccessMessage("");
-      }, 10000);
-      return () => clearTimeout(timer);
-    }
-  }, [successMessage, step]);
-
-  useEffect(() => {
-    setSuccessMessage("");
-  }, [step]);
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#f7fbf8] text-slate-900 dark:bg-[#07100b] dark:text-slate-100 flex flex-col">
@@ -294,22 +297,22 @@ export const ForgotPasswordPage = () => {
                     A senha deve conter:
                     <ul className="mt-2 space-y-1">
                       <li
-                        className={`${passwordForm.watch("password")?.length >= 8 ? "text-emerald-700" : "text-slate-500"}`}
+                        className={`${password?.length >= 8 ? "text-emerald-700" : "text-slate-500"}`}
                       >
                         • No mínimo 8 caracteres
                       </li>
                       <li
-                        className={`${/[a-z]/.test(passwordForm.watch("password") || "") ? "text-emerald-700" : "text-slate-500"}`}
+                        className={`${/[a-z]/.test(password || "") ? "text-emerald-700" : "text-slate-500"}`}
                       >
                         • Letras minúsculas
                       </li>
                       <li
-                        className={`${/[A-Z]/.test(passwordForm.watch("password") || "") ? "text-emerald-700" : "text-slate-500"}`}
+                        className={`${/[A-Z]/.test(password || "") ? "text-emerald-700" : "text-slate-500"}`}
                       >
                         • Letras maiúsculas
                       </li>
                       <li
-                        className={`${/\d/.test(passwordForm.watch("password") || "") ? "text-emerald-700" : "text-slate-500"}`}
+                        className={`${/\d/.test(password || "") ? "text-emerald-700" : "text-slate-500"}`}
                       >
                         • Números
                       </li>

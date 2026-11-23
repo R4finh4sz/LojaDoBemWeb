@@ -7,7 +7,7 @@ export default function MasterLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <AuthGuard title="Painel Master" allowedRoles={4}>
+    <AuthGuard title="Painel Master" allowedRoles="MASTER">
       <MasterShell>{children}</MasterShell>
     </AuthGuard>
   );

@@ -5,11 +5,8 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { BarChart3, ChevronLeft, ChevronRight, FileClock, FilePlus2, LogOut, Menu, UserCircle2, UserPlus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import {
-  clearAuthSession,
-  getStoredAvatarUrl,
-  getStoredUserName,
-} from "@/app/service/api/auth-session";
+import { getStoredAvatarUrl, getStoredUserName } from "@/app/service/api/auth-session";
+import { authService } from "@/app/service/api/authService";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import ErrorModal from "@/components/ui/modal/ErrorModal";
 import reciclaLogo from "@/assets/Images/LogoImage.png";
@@ -20,8 +17,9 @@ type MasterShellProps = {
 
 const navItems = [
   { href: "/main/Master", label: "Visão geral", icon: BarChart3 },
-  { href: "/main/Master/new-admin", label: "Cadastrar administrador", icon: UserPlus },
-  { href: "/main/Master/logs", label: "Logs do sistema", icon: FileClock },
+  { href: "/main/Master/new-admin", label: "Cadastrar vendedor", icon: UserPlus },
+  { href: "/main/Master/new-cooperative", label: "Cadastrar cooperativa", icon: UserPlus },
+  { href: "/main/Master/logs", label: "Atividade recente", icon: FileClock },
   { href: "/main/Master/terms", label: "Cadastrar termos", icon: FilePlus2 },
 ];
 
@@ -53,8 +51,8 @@ export const MasterShell = ({ children }: MasterShellProps) => {
     ? "Perfil"
     : navItems.find((item) => item.href === pathname)?.label ?? "Visão geral";
 
-  const handleLogout = () => {
-    clearAuthSession();
+  const handleLogout = async () => {
+    await authService.logout();
     router.replace("/Auth/Login");
   };
 

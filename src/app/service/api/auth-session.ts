@@ -4,10 +4,29 @@ const USER_NAME_KEY = "userName";
 const USER_EMAIL_KEY = "userEmail";
 const USER_AVATAR_KEY = "userAvatarUrl";
 
-const roleHomeRoutes: Record<number, string> = {
-  4: "/main/Master",
-  5: "/main/Admin",
-};
+const roleHomeRoutes = {
+  MASTER: "/main/Master",
+  PrefeituraVendedor: "/main/Prefeitura",
+  COOPERATIVA: "/main/Cooperativa",
+} as const;
+
+export type WebRole = keyof typeof roleHomeRoutes;
+
+export function getAccessToken() {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(ACCESS_TOKEN_KEY) ?? sessionStorage.getItem(ACCESS_TOKEN_KEY);
+}
+
+function profileStorage() {
+  return localStorage.getItem(ACCESS_TOKEN_KEY) ? localStorage : sessionStorage;
+}
+
+export function getTokenRole(token: string): WebRole | null {
+  const role = decodeJwtPayload(token)?.role;
+  return typeof role === "string" && Object.prototype.hasOwnProperty.call(roleHomeRoutes, role)
+    ? role as WebRole
+    : null;
+}
 
 const decodeBase64Url = (value: string) => {
   const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
@@ -49,69 +68,24 @@ export const isJwtValid = (token: string | null | undefined): boolean => {
   return expiresAt * 1000 > Date.now();
 };
 
-export const getStoredRoleId = (): number | null => {
-  if (typeof window === "undefined") {
-    return null;
-  }
+export function getStoredRole() {
+  const token = getAccessToken();
+  return token ? getTokenRole(token) : null;
+}
 
-  const rawRoleId = window.localStorage.getItem(ROLE_ID_KEY);
-  const parsedRoleId = rawRoleId ? Number(rawRoleId) : NaN;
-
-  if (Number.isFinite(parsedRoleId)) {
-    return parsedRoleId;
-  }
-
-  const token = window.localStorage.getItem(ACCESS_TOKEN_KEY);
-  const payload = token ? decodeJwtPayload(token) : null;
-  const fallbackRoleId =
-    payload?.roleId ?? payload?.userRoleId ?? payload?.role;
-  const parsedFallbackRoleId = Number(fallbackRoleId);
-
-  return Number.isFinite(parsedFallbackRoleId) ? parsedFallbackRoleId : null;
-};
-
-export const storeAuthSession = ({
-  jwt,
-  roleId,
-  userName,
-  userEmail,
-  avatarUrl,
-}: {
-  jwt: string;
-  roleId?: number | null;
-  userName?: string | null;
-  userEmail?: string | null;
-  avatarUrl?: string | null;
-}) => {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.localStorage.setItem(ACCESS_TOKEN_KEY, jwt);
-
-  if (typeof roleId === "number" && Number.isFinite(roleId)) {
-    window.localStorage.setItem(ROLE_ID_KEY, String(roleId));
-  }
-
-  if (typeof userName === "string" && userName.trim()) {
-    window.localStorage.setItem(USER_NAME_KEY, userName.trim());
-  }
-
-  if (typeof userEmail === "string" && userEmail.trim()) {
-    window.localStorage.setItem(USER_EMAIL_KEY, userEmail.trim());
-  }
-
-  if (typeof avatarUrl === "string" && avatarUrl.trim()) {
-    window.localStorage.setItem(USER_AVATAR_KEY, avatarUrl.trim());
-  }
-};
+export function storeAuthSession(jwt: string, email: string, remember: boolean) {
+  clearAuthSession();
+  const storage = remember ? localStorage : sessionStorage;
+  storage.setItem(ACCESS_TOKEN_KEY, jwt);
+  storage.setItem(USER_EMAIL_KEY, email);
+}
 
 export const getStoredUserName = (): string | null => {
   if (typeof window === "undefined") {
     return null;
   }
 
-  return window.localStorage.getItem(USER_NAME_KEY);
+  return profileStorage().getItem(USER_NAME_KEY);
 };
 
 export const getStoredAvatarUrl = (): string | null => {
@@ -119,7 +93,7 @@ export const getStoredAvatarUrl = (): string | null => {
     return null;
   }
 
-  return window.localStorage.getItem(USER_AVATAR_KEY);
+  return profileStorage().getItem(USER_AVATAR_KEY);
 };
 
 export const setStoredAvatarUrl = (avatarUrl: string) => {
@@ -127,7 +101,7 @@ export const setStoredAvatarUrl = (avatarUrl: string) => {
     return;
   }
 
-  window.localStorage.setItem(USER_AVATAR_KEY, avatarUrl);
+  profileStorage().setItem(USER_AVATAR_KEY, avatarUrl);
   window.dispatchEvent(new Event("profile-updated"));
 };
 
@@ -136,7 +110,7 @@ export const getStoredUserEmail = (): string | null => {
     return null;
   }
 
-  return window.localStorage.getItem(USER_EMAIL_KEY);
+  return profileStorage().getItem(USER_EMAIL_KEY);
 };
 
 export const clearAuthSession = () => {
@@ -144,34 +118,17 @@ export const clearAuthSession = () => {
     return;
   }
 
-  window.localStorage.removeItem(ACCESS_TOKEN_KEY);
-  window.localStorage.removeItem(ROLE_ID_KEY);
-  window.localStorage.removeItem(USER_NAME_KEY);
-  window.localStorage.removeItem(USER_EMAIL_KEY);
-  window.localStorage.removeItem(USER_AVATAR_KEY);
+  for (const storage of [localStorage, sessionStorage]) {
+    for (const key of [ACCESS_TOKEN_KEY, ROLE_ID_KEY, USER_NAME_KEY, USER_EMAIL_KEY, USER_AVATAR_KEY]) {
+      storage.removeItem(key);
+    }
+  }
 };
 
-export const getRoleHomePath = (roleId?: number | null) => {
-  if (roleId && roleHomeRoutes[roleId]) {
-    return roleHomeRoutes[roleId];
-  }
+export function getRoleHomePath(role?: WebRole | null) {
+  return role ? roleHomeRoutes[role] : "/Auth/Login";
+}
 
-  return "/Auth/Login";
-};
-
-export const isAllowedRole = (
-  allowedRoles: number | number[] | undefined,
-  roleId: number | null,
-) => {
-  if (allowedRoles === undefined) {
-    return true;
-  }
-
-  if (roleId === null) {
-    return false;
-  }
-
-  return Array.isArray(allowedRoles)
-    ? allowedRoles.includes(roleId)
-    : allowedRoles === roleId;
-};
+export function isAllowedRole(allowedRoles: WebRole | WebRole[] | undefined, role: WebRole | null) {
+  return !allowedRoles || (role !== null && (Array.isArray(allowedRoles) ? allowedRoles.includes(role) : allowedRoles === role));
+}
