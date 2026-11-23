@@ -1,3 +1,5 @@
+import { demoEnabled } from "./demo-config";
+
 const ACCESS_TOKEN_KEY = "accessToken";
 const ROLE_ID_KEY = "userRoleId";
 const USER_NAME_KEY = "userName";
@@ -14,7 +16,8 @@ export type WebRole = keyof typeof roleHomeRoutes;
 
 export function getAccessToken() {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem(ACCESS_TOKEN_KEY) ?? sessionStorage.getItem(ACCESS_TOKEN_KEY);
+  const token = localStorage.getItem(ACCESS_TOKEN_KEY) ?? sessionStorage.getItem(ACCESS_TOKEN_KEY);
+  return token && token.endsWith(".demo") === demoEnabled ? token : null;
 }
 
 function profileStorage() {

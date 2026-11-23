@@ -1,12 +1,14 @@
 import axios from "axios";
 import { getAccessToken } from "./auth-session";
+import { demoEnabled } from "./demo-config";
 
 export const http = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/",
   timeout: 15000,
 });
 
-http.interceptors.request.use((config) => {
+http.interceptors.request.use(async (config) => {
+  if (demoEnabled) config.adapter = (await import("./demo-adapter")).demoAdapter;
   const token = getAccessToken();
   if (token) config.headers.set("Authorization", "Bearer " + token);
   return config;

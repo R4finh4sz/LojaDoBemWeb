@@ -3,6 +3,7 @@
 import { useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { authService } from "@/app/service/api/authService";
+import { demoCpf, demoEnabled } from "@/app/service/api/demo-config";
 import { apiError, http } from "@/app/service/api/http";
 import { CitizenRegistration } from "@/components/screens/admin/citizen-registration";
 import { ProfilePage } from "@/components/screens/shared/profile";
@@ -82,6 +83,7 @@ export default function CooperativeHome() {
         <section className="mt-6 grid gap-6 md:grid-cols-2">
           <form onSubmit={credit} className="space-y-5 rounded-3xl border border-slate-200 bg-white p-6">
             <h2 className="text-xl font-bold">Crédito de ecocoins</h2>
+            {demoEnabled && <p className="text-sm">CPF de teste <strong>{demoCpf}</strong></p>}
             <FormInput id="credit-cpf" label="CPF do munícipe" value={cpf} onChange={(event) => setCpf(inputMasks.cpf(event.target.value))} placeholder="000.000.000-00" inputMode="numeric" disabled={busy} required />
             <FormInput id="credit-amount" label="Quantidade de ecocoins" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="0,00" inputMode="decimal" disabled={busy} required />
             {error && <p role="alert" className="text-sm text-red-700">{error}</p>}

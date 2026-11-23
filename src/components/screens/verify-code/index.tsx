@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import verifiedImage from "@/assets/Images/Verified.png";
 import { authService } from "@/app/service/api/authService";
+import { demoCode, demoEnabled } from "@/app/service/api/demo-config";
 import { useRouter } from "next/navigation";
 import { useGlobalModalStore } from "@/stores/useGlobalModalStore";
 import {
@@ -100,7 +101,8 @@ export const VerifyCode = () => {
           Verificação de código
         </h2>
         <p className="mb-4 text-center text-sm text-slate-600">
-          Enviamos um código para o e-mail <strong>{challenge.email}</strong>
+          {demoEnabled ? <>Código de demonstração <strong>{demoCode}</strong></> :
+            <>Enviamos um código para o e-mail <strong>{challenge.email}</strong></>}
         </p>
 
         <div className="flex items-center justify-center gap-3">

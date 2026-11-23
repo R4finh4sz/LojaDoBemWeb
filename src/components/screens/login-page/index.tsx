@@ -8,6 +8,7 @@ import { CheckSquare, Square } from "lucide-react";
 
 import logoImage from "@/assets/Images/LogoImage.png";
 import { authService } from "@/app/service/api/authService";
+import { demoAccounts, demoEnabled, demoPassword } from "@/app/service/api/demo-config";
 import { apiError } from "@/app/service/api/http";
 import { AuthHeader } from "@/components/ui/auth-header";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
@@ -49,6 +50,21 @@ export const LoginPage = () => {
             </p>
           </div>
 
+          {demoEnabled && (
+            <section className="mb-7 rounded-xl bg-emerald-50 p-4 dark:bg-slate-800">
+              <p className="mb-3 text-sm font-semibold text-emerald-800 dark:text-emerald-300">Demonstração · escolha um perfil</p>
+              <div className="flex flex-wrap gap-2">
+                {demoAccounts.map(({ label, email }) => (
+                  <button key={email} type="button" onClick={() => {
+                    setValue("email", email, { shouldValidate: true });
+                    setValue("password", demoPassword, { shouldValidate: true });
+                  }} className="rounded-lg border border-emerald-300 px-3 py-2 text-sm font-semibold">
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <FormInput {...register("email")} id="email" type="email" label="E-mail" placeholder="voce@exemplo.com" error={errors.email} />
             <div>

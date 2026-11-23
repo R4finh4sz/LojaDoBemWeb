@@ -15,3 +15,9 @@ O perfil retornado no JWT define o painel acessado após o 2FA.
 | `COOPERATIVA` | `/main/Cooperativa` |
 
 O crédito de ecocoins usa o CPF do munícipe e é feito no painel da cooperativa. Após a confirmação, o painel exibe o protocolo e o saldo retornados pelo backend.
+
+## Demonstração local
+
+Defina `NEXT_PUBLIC_DEMO_MODE=true` em `.env.local` e reinicie `yarn dev`. Em `/Auth/Login`, selecione um perfil, clique em **Entrar** e use o código `123456`.
+
+Use o CPF `529.982.247-25` para testar o crédito de ecocoins e o carrinho. Para testar uma retirada, use `ABCD1234EF56`. Os dados de demonstração voltam aos valores iniciais ao recarregar a página. Recuperação de senha e exportação de arquivos dependem da API real.
