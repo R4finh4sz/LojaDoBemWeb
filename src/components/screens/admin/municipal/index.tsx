@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { ChevronLeft, ChevronRight, ImagePlus } from "lucide-react";
 import { apiError, http } from "@/app/service/api/http";
 import { useApiResource } from "@/app/service/api/use-api-resource";
 import { FormInput } from "@/components/ui/form-input";
@@ -71,10 +72,43 @@ export function MunicipalDashboard() {
   );
 }
 
+const photoTypes = ["image/jpeg", "image/png", "image/webp"];
+const maxPhotoSize = 10 * 1024 * 1024;
+const maxPhotoLength = 2048;
+
+async function encodeProductPhoto(file: File) {
+  if (!photoTypes.includes(file.type) || file.size > maxPhotoSize) {
+    throw new Error("Selecione uma imagem JPG, PNG ou WebP de até 10 MB.");
+  }
+  const image = await createImageBitmap(file).catch(() => {
+    throw new Error("Não foi possível abrir essa imagem. Selecione outro arquivo.");
+  });
+  try {
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Não foi possível preparar a foto neste navegador.");
+    // A API armazena a imagem no campo photo, limitado a 2.048 caracteres.
+    for (const size of [160, 128, 96, 72, 48, 32]) {
+      const scale = Math.min(1, size / Math.max(image.width, image.height));
+      canvas.width = Math.max(1, Math.round(image.width * scale));
+      canvas.height = Math.max(1, Math.round(image.height * scale));
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      for (const quality of [0.7, 0.45, 0.25]) {
+        const photo = canvas.toDataURL("image/webp", quality);
+        if (photo.length <= maxPhotoLength) return photo;
+      }
+    }
+  } finally {
+    image.close();
+  }
+  throw new Error("A foto excede o limite do cadastro. Tente uma imagem mais simples.");
+}
+
 export function CreateProduct() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
+  const [photoName, setPhotoName] = useState("");
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
@@ -82,13 +116,24 @@ export function CreateProduct() {
     setBusy(true);
     setError("");
     setSaved(false);
+    let photo: string;
+    try {
+      const file = values.get("photo");
+      if (!(file instanceof File) || file.size === 0) throw new Error("Selecione a foto do item.");
+      photo = await encodeProductPhoto(file);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Não foi possível preparar a foto.");
+      setBusy(false);
+      return;
+    }
     try {
       await http.post(productUrl, {
-        name: values.get("name"), description: values.get("description"), photo: values.get("photo"),
+        name: values.get("name"), description: values.get("description"), photo,
         barcode: String(values.get("barcode")).trim() || undefined,
         price: values.get("price"), quantity: Number(values.get("quantity")),
       });
       form.reset();
+      setPhotoName("");
       setSaved(true);
     } catch (error) {
       setError(apiError(error, "Não foi possível cadastrar o item."));
@@ -102,10 +147,24 @@ export function CreateProduct() {
       <div className="grid gap-4 sm:grid-cols-2">
         <FormInput label="Nome" name="name" required maxLength={120} />
         <FormInput label="Descrição" name="description" required maxLength={2000} />
-        <FormInput label="URL da foto" name="photo" type="url" required maxLength={2048} />
         <FormInput label="Código de barras" name="barcode" />
         <FormInput label="Valor em ecocoins" name="price" inputMode="decimal" pattern="[0-9]+([.,][0-9]{1,2})?" required />
         <FormInput label="Estoque inicial" name="quantity" type="number" min="0" max="2147483647" required />
+        <div className="sm:col-span-2">
+          <label htmlFor="product-photo" className="relative flex cursor-pointer flex-wrap items-center gap-3 rounded-2xl border border-dashed border-emerald-500 bg-emerald-50 p-4 text-slate-900 hover:border-emerald-700 focus-within:ring-2 focus-within:ring-emerald-500 dark:bg-slate-800">
+            <ImagePlus size={23} aria-hidden="true" className="text-emerald-700 dark:text-emerald-300" />
+            <span className="min-w-0 space-y-1">
+              <strong className="block text-sm">{photoName ? "Trocar foto do item" : "Selecionar foto do item"}</strong>
+              <span className="block break-all text-xs text-slate-600">{photoName || "JPG, PNG ou WebP até 10 MB. A foto será salva como miniatura."}</span>
+            </span>
+            <input id="product-photo" className="absolute inset-0 h-full w-full cursor-pointer opacity-0" type="file" name="photo"
+              accept={photoTypes.join(",")} required disabled={busy}
+              onChange={(event) => {
+                setPhotoName(event.target.files?.[0]?.name ?? "");
+                setError("");
+              }} />
+          </label>
+        </div>
       </div>
       {error && <p role="alert">{error}</p>}
       {saved && <p role="status">Item cadastrado.</p>}
@@ -185,10 +244,14 @@ export function Inventory() {
               <button className={action} disabled={busy}>Atualizar</button>
             </form>
           ))}
-          <nav aria-label="Paginação do estoque" className="flex items-center gap-3">
-            <button className={action} disabled={page === 1 || busy} onClick={() => setPage(page - 1)}>Anterior</button>
-            <span>Página {page}</span>
-            <button className={action} disabled={page >= result.data.pagination.totalPages || busy} onClick={() => setPage(page + 1)}>Próxima</button>
+          <nav aria-label="Paginação do estoque" className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+            <button type="button" className={action + " flex items-center gap-1 justify-self-start max-sm:px-2"} disabled={page === 1 || busy} onClick={() => setPage(page - 1)}>
+              <ChevronLeft size={16} aria-hidden="true" />Anterior
+            </button>
+            <span className="text-center text-sm" aria-live="polite">Página {page}</span>
+            <button type="button" className={action + " flex items-center gap-1 justify-self-end max-sm:px-2"} disabled={page >= result.data.pagination.totalPages || busy} onClick={() => setPage(page + 1)}>
+              Próxima<ChevronRight size={16} aria-hidden="true" />
+            </button>
           </nav>
         </>
       )}
