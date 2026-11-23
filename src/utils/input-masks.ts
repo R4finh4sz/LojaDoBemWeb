@@ -1,5 +1,14 @@
 const onlyDigits = (value: string, limit: number) => value.replace(/\D/g, "").slice(0, limit);
 
+export const decimalValueMask = (value: string) => {
+  const cleaned = value.replace(/[^0-9,.]/g, "").replace(".", ",");
+  const separator = cleaned.indexOf(",");
+  if (separator === -1) return cleaned.slice(0, 10);
+  const integer = cleaned.slice(0, separator).replace(/,/g, "").slice(0, 10);
+  const fraction = cleaned.slice(separator + 1).replace(/[^0-9]/g, "").slice(0, 2);
+  return `${integer},${fraction}`;
+};
+
 export const normalizeCnpj = (value: string) => value.replace(/[^a-z0-9]/gi, "").toUpperCase();
 
 export const inputMasks = {

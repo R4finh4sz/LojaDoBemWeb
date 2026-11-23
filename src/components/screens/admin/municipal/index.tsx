@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, ImagePlus, PackageCheck, UserRound } from "l
 import { apiError, http } from "@/app/service/api/http";
 import { useApiResource } from "@/app/service/api/use-api-resource";
 import { FormInput } from "@/components/ui/form-input";
+import { decimalValueMask } from "@/utils/input-masks";
 
 export type Product = {
   id: string; name: string; description: string; price: string; quantity: number; barcode: string | null;
@@ -115,12 +116,16 @@ async function encodeProductPhoto(file: File) {
     const context = canvas.getContext("2d");
     if (!context) throw new Error("Não foi possível preparar a foto neste navegador.");
     // A API armazena a imagem no campo photo, limitado a 2.048 caracteres.
-    for (const size of [160, 128, 96, 72, 48, 32]) {
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = "high";
+    for (const size of [240, 220, 192, 160, 128, 96]) {
       const scale = Math.min(1, size / Math.max(image.width, image.height));
       canvas.width = Math.max(1, Math.round(image.width * scale));
       canvas.height = Math.max(1, Math.round(image.height * scale));
+      context.imageSmoothingEnabled = true;
+      context.imageSmoothingQuality = "high";
       context.drawImage(image, 0, 0, canvas.width, canvas.height);
-      for (const quality of [0.7, 0.45, 0.25]) {
+      for (const quality of [0.92, 0.85, 0.75, 0.65]) {
         const photo = canvas.toDataURL("image/webp", quality);
         if (photo.length <= maxPhotoLength) return photo;
       }
@@ -140,9 +145,20 @@ export function CreateProduct() {
     event.preventDefault();
     const form = event.currentTarget;
     const values = new FormData(form);
+    const name = String(values.get("name") ?? "").trim();
+    const description = String(values.get("description") ?? "").trim();
+    const barcode = String(values.get("barcode") ?? "").trim();
+    setSaved(false);
+    if (!name || !description) {
+      setError("Informe o nome e a descrição do item.");
+      return;
+    }
+    if (barcode && !/^[0-9A-Za-z.-]{1,64}$/.test(barcode)) {
+      setError("O código de barras aceita até 64 letras, números, pontos ou hífens.");
+      return;
+    }
     setBusy(true);
     setError("");
-    setSaved(false);
     let photo: string;
     try {
       const file = values.get("photo");
@@ -155,8 +171,8 @@ export function CreateProduct() {
     }
     try {
       await http.post(productUrl, {
-        name: values.get("name"), description: values.get("description"), photo,
-        barcode: String(values.get("barcode")).trim() || undefined,
+        name, description, photo,
+        barcode: barcode || undefined,
         price: values.get("price"), quantity: Number(values.get("quantity")),
       });
       form.reset();
@@ -174,8 +190,9 @@ export function CreateProduct() {
       <div className="grid gap-4 sm:grid-cols-2">
         <FormInput label="Nome" name="name" required maxLength={120} />
         <FormInput label="Descrição" name="description" required maxLength={2000} />
-        <FormInput label="Código de barras" name="barcode" />
-        <FormInput label="Valor em ecocoins" name="price" inputMode="decimal" pattern={productPricePattern} required />
+        <FormInput label="Código de barras" name="barcode" maxLength={64} />
+        <FormInput label="Valor em ecocoins" name="price" inputMode="decimal" pattern={productPricePattern} required
+          onChange={(event) => { event.currentTarget.value = decimalValueMask(event.currentTarget.value); }} />
         <FormInput label="Estoque inicial" name="quantity" type="number" min="0" max="2147483647" required />
         <div className="sm:col-span-2">
           <label htmlFor="product-photo" className="relative flex cursor-pointer flex-wrap items-center gap-3 rounded-2xl border border-dashed border-emerald-500 bg-emerald-50 p-4 text-slate-900 hover:border-emerald-700 focus-within:ring-2 focus-within:ring-emerald-500 dark:bg-slate-800">
@@ -274,7 +291,8 @@ export function Inventory() {
               <form key={product.id} onSubmit={(event) => void update(event, product)} className="grid grid-cols-2 items-end gap-3 border-t border-slate-200 pt-4 xl:grid-cols-[minmax(0,1fr)_minmax(8rem,10rem)_minmax(7rem,9rem)_auto]">
                 <div className="col-span-2 xl:col-span-1"><strong>{product.name}</strong><p className="text-sm text-slate-600">{coins(product.price)} ecocoins · {product.quantity} un.</p></div>
                 <FormInput label="Preço em ecocoins" id={"price-" + product.id} name="price" inputMode="decimal"
-                  pattern={productPricePattern} defaultValue={product.price.replace(".", ",")} required disabled={busy} />
+                  pattern={productPricePattern} defaultValue={product.price.replace(".", ",")} required disabled={busy}
+                  onChange={(event) => { event.currentTarget.value = decimalValueMask(event.currentTarget.value); }} />
                 <FormInput label="Novo estoque" id={"stock-" + product.id} name="quantity" type="number" min="0" max="2147483647" defaultValue={product.quantity} required disabled={busy} />
                 <button className={action + " col-span-2 justify-self-end xl:col-span-1"} disabled={busy}>Atualizar</button>
               </form>
