@@ -2,7 +2,7 @@
 
 import { isAxiosError } from "axios";
 import { useState, type FormEvent } from "react";
-import { ChevronLeft, ChevronRight, ImagePlus } from "lucide-react";
+import { ChevronLeft, ChevronRight, ImagePlus, PackageCheck, UserRound } from "lucide-react";
 import { apiError, http } from "@/app/service/api/http";
 import { useApiResource } from "@/app/service/api/use-api-resource";
 import { FormInput } from "@/components/ui/form-input";
@@ -27,6 +27,10 @@ type Dashboard = {
   recentOrders: { id: string; user: { name: string | null }; collectedAt: string; items: { productId: string; name: string; quantity: number }[] }[];
   topItems: { productId: string; productName: string; units: number; sharePercent: number }[];
 };
+const orderDate = new Intl.DateTimeFormat("pt-BR", {
+  day: "2-digit", month: "short", year: "numeric",
+  hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo",
+});
 
 export function MunicipalDashboard() {
   const result = useApiResource<Dashboard>("store/admin/dashboard");
@@ -39,17 +43,37 @@ export function MunicipalDashboard() {
           <article key={label} className={card}><h3>{label}</h3><p className="text-2xl font-bold">{coins(value)}</p></article>
         ))}
       </div>
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid items-start gap-6 md:grid-cols-2">
         <section className={card}>
-          <h3 className="text-xl font-bold">Pedidos recentes</h3>
-          {!data.recentOrders.length && <p>Nenhum pedido coletado.</p>}
-          {data.recentOrders.map((order) => (
-            <div key={order.id} className="border-t border-slate-200 pt-3 text-sm">
-              <strong>{order.user.name ?? "Munícipe"}</strong>
-              <p>{order.items.map((item) => item.quantity + " × " + item.name).join(", ")}</p>
-              <time>{new Date(order.collectedAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</time>
-            </div>
-          ))}
+          <h3 className="flex items-center gap-2.5 text-xl font-bold">
+            <PackageCheck size={22} aria-hidden="true" className="shrink-0 text-emerald-700 dark:text-emerald-300" />
+            Pedidos recentes
+          </h3>
+          {data.recentOrders.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-slate-200 px-4 py-5 text-sm text-slate-600">Nenhum pedido coletado.</p>
+          ) : (
+            <ul className="space-y-3">
+              {data.recentOrders.map(({ id, user, collectedAt, items }) => (
+                <li key={id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                    <p className="flex min-w-0 items-center gap-2 text-sm font-semibold">
+                      <UserRound size={16} aria-hidden="true" className="shrink-0 text-slate-500" />
+                      <span className="break-words">{user.name || "Munícipe"}</span>
+                    </p>
+                    <time dateTime={collectedAt} className="text-xs text-slate-600">{orderDate.format(new Date(collectedAt))}</time>
+                  </div>
+                  <ul aria-label="Itens retirados" className="mt-3 flex flex-wrap gap-2 border-t border-slate-200 pt-3">
+                    {items.map(({ productId, name, quantity }) => (
+                      <li key={productId} className="inline-flex min-w-0 items-center gap-2 rounded-lg bg-white px-2.5 py-1 text-xs text-slate-700">
+                        <span className="shrink-0 font-bold text-emerald-800 dark:text-emerald-300">{quantity} ×</span>
+                        <span className="break-words">{name}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
         <section className={card}>
           <h3 className="text-xl font-bold">Itens mais retirados</h3>
