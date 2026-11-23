@@ -2,7 +2,7 @@
 
 import { isAxiosError } from "axios";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Wallet } from "lucide-react";
+import { Hash, Wallet } from "lucide-react";
 import { apiError, http } from "@/app/service/api/http";
 import { FormInput } from "@/components/ui/form-input";
 import ErrorModal from "@/components/ui/modal/ErrorModal";
@@ -142,15 +142,22 @@ export function AdminStore() {
         <div className={card}>
           <header className="flex flex-wrap items-start justify-between gap-3">
             <h3 className="pt-2 text-xl font-bold">Carrinho</h3>
-            <div className="ml-auto flex max-w-full items-start gap-2.5 rounded-xl bg-emerald-50 px-4 py-3 text-right text-emerald-950 dark:bg-emerald-950/45 dark:text-emerald-100">
-              <Wallet size={18} aria-hidden="true" className="mt-0.5 shrink-0" />
-              <div>
-                <p className="text-xs font-semibold">Código {cart.id.slice(0, 8)}</p>
-                {buyer?.id === cart.buyerId && (
-                  <p className="mt-1 text-sm font-bold">Saldo · {coins(buyer.ecoCoinBalance)} ecocoins</p>
-                )}
+            <dl className="ml-auto flex max-w-full flex-wrap justify-end gap-2">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5">
+                <dt className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+                  <Hash size={14} aria-hidden="true" />Código
+                </dt>
+                <dd className="mt-1 text-sm font-bold">{cart.id.slice(0, 8)}</dd>
               </div>
-            </div>
+              {buyer?.id === cart.buyerId && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 px-4 py-2.5 text-emerald-950 dark:border-emerald-900 dark:bg-emerald-950/45 dark:text-emerald-100">
+                  <dt className="flex items-center gap-1.5 text-xs font-semibold">
+                    <Wallet size={14} aria-hidden="true" />Saldo
+                  </dt>
+                  <dd className="mt-1 text-sm font-bold">{coins(buyer.ecoCoinBalance)} ecocoins</dd>
+                </div>
+              )}
+            </dl>
           </header>
           {!cart.items.length && <p>Adicione itens ao carrinho.</p>}
           <ul className="space-y-2">
