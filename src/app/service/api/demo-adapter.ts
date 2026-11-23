@@ -8,7 +8,7 @@ const now = () => new Date().toISOString();
 const signDemoToken = (role: string) =>
   [btoa('{"alg":"none"}'), btoa(JSON.stringify({ role, exp: Math.floor(Date.now() / 1000) + 3600 })), "demo"].join(".");
 
-const residents = new Map([[digits(demoCpf), { id: "municipe-demo", balance: 124000, pendingActivation: false }]]);
+const residents = new Map([[digits(demoCpf), { id: "municipe-demo", name: "Ana Paula da Silva", balance: 124000, pendingActivation: false }]]);
 const demoStock = [
   { name: "Caneca de cerâmica", price: 65, quantity: 12 },
   { name: "Kit de canudos inox", price: 38, quantity: 24 },
@@ -57,9 +57,11 @@ const products = [
 ];
 type Cart = { id: string; buyerId: string; expiresAt: string; items: { productId: string; quantity: number; product: typeof products[number] }[] };
 const carts = new Map<string, Cart>();
-const sales = new Map<string, { saleId: string; total: string; ecoCoinBalance: string }>();
+const sales = new Map<string, { saleId: string; protocol: string; buyerName: string; sellerName: string; total: string; ecoCoinBalance: string }>();
+const saleSequences = new Map<string, number>();
 const completedSales: {
-  id: string; cartId: string; quantity: number; unitPrice: string; totalPrice: string;
+  id: string; cartId: string; protocol: string; user: { name: string }; sellerName: string;
+  quantity: number; unitPrice: string; totalPrice: string;
   completedAt: string; createdAt: string; status: "COMPLETED"; product: { name: string };
 }[] = [];
 const credits = new Map<string, { auditId: string; ecoCoinBalance: string }>();
@@ -122,7 +124,7 @@ export const demoAdapter: AxiosAdapter = async (config) => {
       allow("COOPERATIVA", "PrefeituraVendedor");
       const cpf = digits(body.cpf);
       if (residents.has(cpf)) return fail("CPF já cadastrado na demonstração.", 409);
-      const resident = { id: crypto.randomUUID(), balance: 0, pendingActivation: true };
+      const resident = { id: crypto.randomUUID(), name: body.name, balance: 0, pendingActivation: true };
       residents.set(cpf, resident);
       return response({ id: resident.id, pendingActivation: true }, 201);
     }
@@ -179,8 +181,10 @@ export const demoAdapter: AxiosAdapter = async (config) => {
       if (pickupCompleted || body.code.toUpperCase() !== "ABCD1234EF56") return fail("Código inválido ou já usado. Código de teste: ABCD1234EF56.", 404);
       pickupCompleted = true;
       return response({ redemption: { id: "retirada-demo", product: products[0] } });
-    case "GET /store/admin/redemptions":
-      return response({ redemptions: completedSales });
+    case "GET /store/admin/redemptions": {
+      const protocol = url.searchParams.get("protocol")?.toLowerCase();
+      return response({ redemptions: completedSales.filter((sale) => !protocol || [sale.protocol, sale.cartId].includes(protocol)) });
+    }
     case "GET /store/admin/carts":
       return response({ carts: [...carts.values()] });
     case "POST /store/admin/carts": {
@@ -222,10 +226,15 @@ export const demoAdapter: AxiosAdapter = async (config) => {
     }
     buyer.balance -= total;
     cart.items.forEach(({ product, quantity }) => { product.quantity -= quantity; });
-    const receipt = { saleId: cart.id, total: money(total), ecoCoinBalance: money(buyer.balance) };
     const completedAt = now();
+    const day = new Intl.DateTimeFormat("en-GB", { timeZone: "America/Sao_Paulo" }).format(new Date(completedAt)).replaceAll("/", "");
+    const sequence = (saleSequences.get(day) ?? 0) + 1;
+    saleSequences.set(day, sequence);
+    const protocol = day + String(sequence).padStart(2, "0");
+    const sellerName = "Marcos Vinícius Oliveira";
+    const receipt = { saleId: cart.id, protocol, buyerName: buyer.name, sellerName, total: money(total), ecoCoinBalance: money(buyer.balance) };
     completedSales.push(...cart.items.map(({ product, quantity }) => ({
-      id: crypto.randomUUID(), cartId: cart.id, quantity, unitPrice: product.price,
+      id: crypto.randomUUID(), cartId: cart.id, protocol, user: { name: buyer.name }, sellerName, quantity, unitPrice: product.price,
       totalPrice: money(Math.round(Number(product.price) * 100) * quantity),
       completedAt, createdAt: completedAt, status: "COMPLETED" as const, product: { name: product.name },
     })));

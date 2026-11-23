@@ -2,7 +2,7 @@
 
 import { isAxiosError } from "axios";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Hash, ShoppingBag, Wallet } from "lucide-react";
+import { Hash, ShoppingBag, Trash2, Wallet } from "lucide-react";
 import { apiError, http } from "@/app/service/api/http";
 import { FormInput } from "@/components/ui/form-input";
 import ErrorModal from "@/components/ui/modal/ErrorModal";
@@ -15,7 +15,7 @@ import { ProductCarousel } from "./product-carousel";
 
 type Buyer = { id: string; ecoCoinBalance: string; pendingActivation: boolean };
 type Cart = { id: string; buyerId: string; expiresAt: string; items: { productId: string; quantity: number; product: Product }[] };
-type Receipt = { saleId: string; total: string; ecoCoinBalance: string };
+type Receipt = { saleId: string; protocol?: string; buyerName?: string | null; sellerName?: string | null; total: string; ecoCoinBalance: string };
 const cartsUrl = "store/admin/carts";
 
 export function AdminStore({ onViewProtocol }: { onViewProtocol: (protocol: string) => void }) {
@@ -24,7 +24,7 @@ export function AdminStore({ onViewProtocol }: { onViewProtocol: (protocol: stri
   const [cart, setCart] = useState<Cart | null>(null);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [checkoutUnconfirmed, setCheckoutUnconfirmed] = useState(false);
-  const [confirmCheckout, setConfirmCheckout] = useState(false);
+  const [confirmation, setConfirmation] = useState<"checkout" | "cancel" | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [addedItem, setAddedItem] = useState<{ name: string } | null>(null);
@@ -96,7 +96,7 @@ export function AdminStore({ onViewProtocol }: { onViewProtocol: (protocol: stri
 
   async function checkout() {
     if (!cart?.items.length || inFlight.current) return;
-    setConfirmCheckout(false);
+    setConfirmation(null);
     setCheckoutUnconfirmed(true);
     await perform(async () => {
       const { data } = await http.post<Receipt>(cartsUrl + "/" + cart.id + "/checkout");
@@ -110,6 +110,17 @@ export function AdminStore({ onViewProtocol }: { onViewProtocol: (protocol: stri
     });
   }
 
+  async function cancelCart() {
+    if (!cart || inFlight.current || checkoutUnconfirmed) return;
+    setConfirmation(null);
+    await perform(async () => {
+      await http.delete(cartsUrl + "/" + cart.id);
+      setCart(null);
+      setBuyer(null);
+      setCpf("");
+    });
+  }
+
   function closeLookupFeedback() {
     if (inFlight.current) return;
     setBuyer(null);
@@ -118,15 +129,21 @@ export function AdminStore({ onViewProtocol }: { onViewProtocol: (protocol: stri
 
   return (
     <section className="space-y-6">
-      <Modal open={confirmCheckout} onClose={() => setConfirmCheckout(false)}>
+      <Modal open={confirmation !== null} onClose={() => setConfirmation(null)}>
         <div className="space-y-4">
-          <ShoppingBag size={24} aria-hidden="true" className="text-emerald-700 dark:text-emerald-300" />
-          <h3 className="text-xl font-bold text-slate-900">Finalizar venda?</h3>
-          <p className="text-sm text-slate-600">Confirme o débito de <strong>{coins(total / 100)} ecocoins</strong> do saldo do munícipe.</p>
+          {confirmation === "cancel" ? <Trash2 size={24} aria-hidden="true" className="text-red-700 dark:text-red-300" /> :
+            <ShoppingBag size={24} aria-hidden="true" className="text-emerald-700 dark:text-emerald-300" />}
+          <h3 className="text-xl font-bold text-slate-900">{confirmation === "cancel" ? "Tem certeza que deseja cancelar?" : "Finalizar venda?"}</h3>
+          <p className="text-sm text-slate-600">
+            {confirmation === "cancel" ? "Os itens serão removidos do carrinho. Nenhum ecocoin será debitado." :
+              <>Confirme o débito de <strong>{coins(total / 100)} ecocoins</strong> do saldo do munícipe.</>}
+          </p>
           <div className="flex flex-wrap justify-end gap-3">
-            <button type="button" onClick={() => setConfirmCheckout(false)}
+            <button type="button" onClick={() => setConfirmation(null)}
               className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-800">Voltar</button>
-            <button type="button" onClick={checkout} className={action}>Confirmar venda</button>
+            {confirmation === "cancel" ? (
+              <button type="button" onClick={cancelCart} className="rounded-xl bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800">Confirmar cancelamento</button>
+            ) : <button type="button" onClick={checkout} className={action}>Confirmar venda</button>}
           </div>
         </div>
       </Modal>
@@ -141,9 +158,13 @@ export function AdminStore({ onViewProtocol }: { onViewProtocol: (protocol: stri
       {receipt && (
         <div className={card} role="status">
           <h3 className="text-xl font-bold">Venda concluída</h3>
-          <p>Protocolo {receipt.saleId}</p>
+          <p>Protocolo {receipt.protocol ?? receipt.saleId}</p>
+          <dl className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
+            <div><dt className="text-slate-600">Comprador</dt><dd className="font-semibold">{receipt.buyerName || "Nome indisponível"}</dd></div>
+            <div><dt className="text-slate-600">Vendedor</dt><dd className="font-semibold">{receipt.sellerName || "Nome indisponível"}</dd></div>
+          </dl>
           <p>{coins(receipt.total)} ecocoins debitados · Saldo restante de {coins(receipt.ecoCoinBalance)} ecocoins</p>
-          <button type="button" className={action} onClick={() => onViewProtocol(receipt.saleId)}>Ver no histórico</button>
+          <button type="button" className={action} onClick={() => onViewProtocol(receipt.protocol ?? receipt.saleId)}>Ver no histórico</button>
         </div>
       )}
       {!cart ? (
@@ -156,7 +177,7 @@ export function AdminStore({ onViewProtocol }: { onViewProtocol: (protocol: stri
           <button className={action} disabled={busy || !!buyer || !!error}>{busy ? "Consultando..." : "Consultar"}</button>
         </form>
       ) : (
-        <div className={card} inert={confirmCheckout}>
+        <div className={card} inert={confirmation !== null}>
           <header className="flex flex-wrap items-start justify-between gap-3">
             <h3 className="pt-2 text-xl font-bold">Carrinho</h3>
             <dl className="ml-auto flex max-w-full flex-wrap justify-end gap-2">
@@ -201,16 +222,11 @@ export function AdminStore({ onViewProtocol }: { onViewProtocol: (protocol: stri
             <p className="w-full font-semibold sm:w-auto">Total de {coins(total / 100)} ecocoins</p>
             <button type="button" className={action} disabled={busy || !cart.items.length} onClick={() => {
               if (checkoutUnconfirmed) void checkout();
-              else setConfirmCheckout(true);
+              else setConfirmation("checkout");
             }}>
               {checkoutUnconfirmed ? "Confirmar resultado da venda" : "Finalizar venda"}
             </button>
-            <button type="button" className="ml-auto rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/45" disabled={busy || checkoutUnconfirmed} onClick={() => void perform(async () => {
-              await http.delete(cartsUrl + "/" + cart.id);
-              setCart(null);
-              setBuyer(null);
-              setCpf("");
-            })}>Cancelar carrinho</button>
+            <button type="button" className="ml-auto rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/45" disabled={busy || checkoutUnconfirmed} onClick={() => setConfirmation("cancel")}>Cancelar carrinho</button>
           </div>
           <ProductCarousel
             disabled={busy || checkoutUnconfirmed}
