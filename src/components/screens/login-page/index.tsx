@@ -61,9 +61,9 @@ export const LoginPage = () => {
       <main className="flex flex-1 items-center justify-center px-6 py-12">
         <div className="w-full max-w-lg rounded-3xl bg-white px-8 py-10 shadow-[0_24px_70px_rgba(15,23,42,0.20)] ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-700 sm:px-12 sm:py-12">
           <div className="mb-7 text-center">
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900">Bem-vindo de volta</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900">Seja Bem-vindo</h1>
             <p className="mx-auto mt-3 max-w-sm text-base leading-7 text-slate-600">
-              Entre com seu e-mail e sua senha.
+              Insira suas credenciais para acessar o painel administrativo do sistema de gestão de resíduos sólidos.
             </p>
           </div>
 

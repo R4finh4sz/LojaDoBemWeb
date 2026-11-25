@@ -12,58 +12,58 @@ const navItems = [
 ];
 
 const heroStats = [
-  { value: "+ pontos", label: "locais de troca planejados na cidade" },
-  { value: "Ecocoins", label: "convertidos a partir de recicláveis entregues" },
-  { value: "Recompensas", label: "alimentos e itens cadastrados pelos admins" },
+  { value: "Prefeitura", label: "pré-cadastro de moradores e atendimento" },
+  { value: "Cooperativas", label: "crédito de ecocoins pelas entregas" },
+  { value: "Loja municipal", label: "troca de ecocoins por produtos disponíveis" },
 ];
 
 const howItWorksSteps = [
   {
-    title: "1. Separe e leve",
+    title: "1. Faça o pré-cadastro",
     description:
-      "O cidadão junta recicláveis e leva até um ponto credenciado na cidade.",
+      "Procure a equipe de atendimento da prefeitura para fazer o pré-cadastro e confirme que leu e aceitou os termos de uso.",
   },
   {
-    title: "2. Valide e pontue",
+    title: "2. Entregue seus recicláveis",
     description:
-      "A equipe registra a entrega e converte o material em ecocoins na hora.",
+      "Leve os materiais recicláveis a uma cooperativa participante. A equipe usa seu CPF para creditar os ecocoins no seu saldo.",
   },
   {
-    title: "3. Troque por benefícios",
+    title: "3. Use seus ecocoins",
     description:
-      "Os pontos podem ser usados em alimentos e itens cadastrados pelos administradores e pelo master.",
+      "Escolha entre os produtos disponíveis na loja municipal. A equipe localiza seu cadastro pelo CPF e confirma a troca com débito no saldo.",
   },
 ];
 
 const benefits = [
   {
     kicker: "Para moradores",
-    title: "Entrega com retorno imediato.",
+    title: "Ecocoins para trocar por produtos",
     description:
-      "Recicla, acumula ecocoins e acessa itens úteis sem complicação.",
+      "Acumule ecocoins com suas entregas e use o saldo para resgatar alimentos e outros produtos disponíveis.",
     tone: "default" as const,
   },
   {
-    kicker: "Para administradores",
-    title: "Controle de pontos, estoques e trocas em um só lugar.",
+    kicker: "Para prefeituras e cooperativas",
+    title: "Atendimento, estoque e créditos",
     description:
-      "Somente administradores e master acessam o login para cadastrar recompensas e gerir a operação.",
+      "A equipe municipal pré-cadastra moradores, gerencia o estoque e registra as trocas. As cooperativas creditam os ecocoins.",
     tone: "accent" as const,
   },
   {
-    kicker: "Para a cidade",
-    title: "Mais engajamento e menos descarte irregular.",
+    kicker: "Para a administração central",
+    title: "Gestão de municípios e operadores",
     description:
-      "A plataforma ajuda a distribuir pontos de troca e fomentar cultura sustentável local.",
+      "O perfil Master cadastra municípios, gerencia os acessos das equipes e publica os termos de uso.",
     tone: "default" as const,
   },
 ];
 
 const closingBullets = [
-  "Cadastro de recompensas por administradores",
-  "Saldo de ecocoins por usuário",
-  "Pontos de coleta por região",
-  "Troca por alimentos e itens úteis",
+  "Identificação do morador pelo CPF",
+  "Preços dos produtos em ecocoins",
+  "Débito no saldo após a confirmação da troca",
+  "Comprovante com protocolo e saldo restante",
 ];
 
 export default function Home() {
@@ -77,9 +77,9 @@ export default function Home() {
         <div className="w-full max-w-5xl">
           <HeroSection
             kicker="Economia circular na prática"
-            title="Reciclagem que vira valor real para pessoas e cidades."
-            description="O ReciclaOnline conecta moradores, pontos de coleta e administradores para transformar resíduos em ecocoins, pontos que podem ser trocados por alimentos e itens cadastrados pelos responsáveis do sistema."
-            primaryAction={{ href: "Auth/Login", label: "Acessar painel de admin" }}
+            title="Troque recicláveis por ecocoins"
+            description="No ReciclaOnline, moradores entregam recicláveis a cooperativas participantes, recebem ecocoins e usam o saldo para resgatar produtos na loja municipal."
+            primaryAction={{ href: "Auth/Login", label: "Acessar painel de operação" }}
             secondaryAction={{
               href: "#como-funciona",
               label: "Ver como funciona",
@@ -93,8 +93,8 @@ export default function Home() {
       <HowItWorksSection
         id="como-funciona"
         kicker="Como funciona"
-        title="Um fluxo simples para incentivar reciclagem e recompensar a comunidade."
-        description="A proposta é dar valor ao que seria descartado, gerando pontos acumuláveis e fortalecendo a relação entre moradores, poder público e comércio local."
+        title="Do pré-cadastro à troca na loja municipal"
+        description="A prefeitura faz o pré-cadastro, a cooperativa credita os ecocoins e a loja municipal registra o resgate."
         steps={howItWorksSteps}
       />
 
@@ -103,8 +103,8 @@ export default function Home() {
       <ClosingSection
         id="trocas"
         kicker="Trocas e recompensas"
-        title="Ecocoins que conectam reciclagem a alimentos e benefícios reais."
-        description="O ReciclaOnline nasce para organizar a experiência, dar visibilidade aos pontos de coleta e permitir que administradores e master alimentem o catálogo de recompensas de forma controlada."
+        title="Como funciona o resgate na loja municipal"
+        description="Consulte os produtos disponíveis e seus preços em ecocoins com a equipe da loja municipal. Após a confirmação, você recebe um comprovante com o protocolo e o saldo atualizado."
         bullets={closingBullets}
       />
     </main>
