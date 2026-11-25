@@ -1,68 +1,237 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 
-import { useState } from "react";
-import { CheckCircle2, Coins, Printer, Search, UserCheck, X } from "lucide-react";
-import Modal from "@/components/ui/modal/Modal";
+import { isAxiosError } from "axios";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Hash, Wallet } from "lucide-react";
+import { apiError, http } from "@/app/service/api/http";
+import { FormInput } from "@/components/ui/form-input";
+import ErrorModal from "@/components/ui/modal/ErrorModal";
+import SuccessModal from "@/components/ui/modal/SuccessModal";
+import { inputMasks } from "@/utils/input-masks";
+import { isValidCpf } from "@/validation/citizen-registration";
+import { action, card, coins, type Product } from "../municipal";
+import { ProductCarousel } from "./product-carousel";
 
-type StoreItem = { id: number; name: string; description: string; value: number; image: string; stock: number };
-type Citizen = { id: string; name: string; gamertag: string; cpf: string; balance: number };
-type ExchangeReceipt = { protocol: string; item: StoreItem; citizen: Citizen; previousBalance: number; remainingBalance: number; operator: string; createdAt: Date };
+type Buyer = { id: string; ecoCoinBalance: string; pendingActivation: boolean };
+type Cart = { id: string; buyerId: string; expiresAt: string; items: { productId: string; quantity: number; product: Product }[] };
+type Receipt = { saleId: string; protocol?: string; buyerName?: string | null; sellerName?: string | null; total: string; ecoCoinBalance: string };
+const cartsUrl = "store/admin/carts";
 
-const storeItems: StoreItem[] = [
-  { id: 1, name: "Garrafa térmica reciclada", description: "Garrafa de aço reciclado com capacidade de 600 ml.", value: 850, image: "/mock-bottle.svg", stock: 18 },
-  { id: 2, name: "Ecobag retornável", description: "Bolsa reutilizável de alta resistência produzida com tecido reciclado.", value: 420, image: "/mock-bag.svg", stock: 32 },
-];
+export function AdminStore({ onViewProtocol }: { onViewProtocol: (protocol: string) => void }) {
+  const [buyer, setBuyer] = useState<Buyer | null>(null);
+  const [cpf, setCpf] = useState("");
+  const [cart, setCart] = useState<Cart | null>(null);
+  const [receipt, setReceipt] = useState<Receipt | null>(null);
+  const [checkoutUnconfirmed, setCheckoutUnconfirmed] = useState(false);
+  const [confirmation, setConfirmation] = useState<"checkout" | "cancel" | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [addedItem, setAddedItem] = useState<{ name: string } | null>(null);
+  const inFlight = useRef(false);
+  const total = cart?.items.reduce(
+    (sum, item) => sum + BigInt(Math.round(Number(item.product.price) * 100)) * BigInt(item.quantity),
+    BigInt(0),
+  ) ?? BigInt(0);
+  const totalInCoins = total.toString().padStart(3, "0").replace(/([0-9]{2})$/, ".$1");
 
-const citizens: Citizen[] = [
-  { id: "USR-1042", name: "Ana Souza", gamertag: "ana.eco", cpf: "52998224725", balance: 1240 },
-  { id: "USR-2087", name: "Carlos Lima", gamertag: "carlosverde", cpf: "11144477735", balance: 680 },
-  { id: "USR-3159", name: "Beatriz Costa", gamertag: "biarecicla", cpf: "12345678909", balance: 2100 },
-];
+  useEffect(() => {
+    if (!addedItem) return;
+    const timer = setTimeout(() => setAddedItem(null), 3000);
+    return () => clearTimeout(timer);
+  }, [addedItem]);
 
-const normalizeSearch = (value: string) => value.trim().toLowerCase();
-const maskCpf = (cpf: string) => `***.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-**`;
+  async function perform(operation: () => Promise<void>, onError?: (error: unknown) => void | Promise<void>) {
+    if (inFlight.current) return false;
+    inFlight.current = true;
+    setBusy(true);
+    setError("");
+    try {
+      await operation();
+      return true;
+    } catch (error) {
+      await onError?.(error);
+      setError(apiError(error, "Não foi possível concluir a operação. Verifique a conexão e tente novamente."));
+      return false;
+    } finally {
+      inFlight.current = false;
+      setBusy(false);
+    }
+  }
 
-type AdminStoreProps = { operatorName: string };
+  function lookup(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (inFlight.current || buyer || error) return;
+    setReceipt(null);
+    if (!isValidCpf(cpf)) {
+      setError("Informe um CPF válido.");
+      return;
+    }
+    void perform(async () => {
+      const { data } = await http.post<Buyer>("residents/lookup", { cpf });
+      setBuyer(data);
+    });
+  }
 
-export function AdminStore({ operatorName }: AdminStoreProps) {
-  const [selectedItem, setSelectedItem] = useState<StoreItem | null>(null);
-  const [query, setQuery] = useState("");
-  const [searched, setSearched] = useState(false);
-  const [citizen, setCitizen] = useState<Citizen | null>(null);
-  const [receipt, setReceipt] = useState<ExchangeReceipt | null>(null);
+  async function openCart() {
+    if (!buyer) return;
+    await perform(async () => {
+      const { data } = await http.post<Cart>(cartsUrl, { buyerId: buyer.id });
+      setCart(data);
+    });
+  }
 
-  const close = () => { setSelectedItem(null); setQuery(""); setSearched(false); setCitizen(null); setReceipt(null); };
-  const startExchange = (item: StoreItem) => { setSelectedItem(item); setQuery(""); setSearched(false); setCitizen(null); setReceipt(null); };
-  const searchCitizen = () => {
-    const normalized = normalizeSearch(query);
-    const digits = query.replace(/\D/g, "");
-    const result = citizens.find((item) => item.gamertag.toLowerCase() === normalized || (digits.length === 11 && item.cpf === digits)) ?? null;
-    setCitizen(result); setSearched(true);
-  };
-  const confirmExchange = () => {
-    if (!selectedItem || !citizen || citizen.balance < selectedItem.value) return;
-    setReceipt({ protocol: `TRC-${Date.now().toString().slice(-8)}`, item: selectedItem, citizen, previousBalance: citizen.balance, remainingBalance: citizen.balance - selectedItem.value, operator: operatorName, createdAt: new Date() });
-  };
+  async function updateItem(product: Product, quantity: number) {
+    if (!cart || checkoutUnconfirmed) return false;
+    return perform(async () => {
+      const { data } = await http.put<Cart>(cartsUrl + "/" + cart.id + "/items", {
+        productId: product.id, quantity,
+      });
+      setCart(data);
+    });
+  }
 
-  return <section className="mt-6 space-y-6">
-    <header><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">Catálogo de recompensas</p><h3 className="mt-2 text-2xl font-bold">Loja</h3><p className="mt-2 text-sm text-slate-600">Selecione um item para realizar a troca de ecocoins do munícipe.</p></header>
-    <div className="grid gap-6 md:grid-cols-2 2xl:grid-cols-3">{storeItems.map((item) => <article key={item.id} className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_16px_42px_rgba(15,23,42,0.12)]">
-      <div className="aspect-[16/10] overflow-hidden bg-emerald-50"><img src={item.image} alt={item.name} className="h-full w-full object-cover" /></div>
-      <div className="p-6"><div className="flex items-start justify-between gap-4"><h4 className="text-lg font-bold text-slate-900">{item.name}</h4><span className="shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">{item.stock} disponíveis</span></div><p className="mt-3 min-h-12 text-sm leading-6 text-slate-600">{item.description}</p><div className="mt-5 flex items-center justify-between border-t border-slate-200 pt-5"><div><span className="text-xs text-slate-500">Valor da troca</span><strong className="mt-1 flex items-center gap-1.5 text-xl text-emerald-700"><Coins size={18} />{item.value.toLocaleString("pt-BR")}</strong></div><button type="button" onClick={() => startExchange(item)} className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-emerald-700">Trocar</button></div></div>
-    </article>)}</div>
+  async function addItem(product: Product) {
+    const quantity = cart?.items.find((item) => item.productId === product.id)?.quantity ?? 0;
+    const added = await updateItem(product, quantity + 1);
+    if (added) setAddedItem({ name: product.name });
+    return added;
+  }
 
-    <Modal open={selectedItem !== null} onClose={close}>
-      {selectedItem && !receipt && <div><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-wider text-emerald-700">Realizar troca</p><h3 className="mt-1 text-xl font-bold">{selectedItem.name}</h3><p className="mt-1 text-sm font-semibold text-emerald-700">{selectedItem.value.toLocaleString("pt-BR")} ecocoins</p></div><button type="button" onClick={close} aria-label="Fechar" className="rounded-lg p-2 text-slate-400 hover:bg-slate-100"><X size={20} /></button></div>
-        <label htmlFor="customer-search" className="mt-6 block text-sm font-semibold text-slate-700">Gamertag ou CPF do cliente</label><div className="mt-2 flex gap-2"><input id="customer-search" value={query} onChange={(event) => { setQuery(event.target.value); setSearched(false); setCitizen(null); }} onKeyDown={(event) => { if (event.key === "Enter") searchCitizen(); }} placeholder="Ex.: ana.eco ou 000.000.000-00" className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-emerald-400 focus:bg-white" /><button type="button" onClick={searchCitizen} className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 text-white" aria-label="Pesquisar cliente"><Search size={18} /></button></div>
-        <p className="mt-2 text-xs text-slate-500">Para testar: ana.eco, carlosverde ou biarecicla.</p>
-        {searched && !citizen && <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm font-medium text-red-700">Nenhum munícipe encontrado com esses dados.</p>}
-        {citizen && <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4"><div className="flex items-start gap-3"><UserCheck className="mt-0.5 shrink-0 text-emerald-700" size={23} /><div className="min-w-0"><p className="text-xs font-bold uppercase tracking-wider text-emerald-700">Cliente encontrado</p><h4 className="mt-1 font-bold text-slate-900">{citizen.name}</h4><p className="mt-1 text-sm text-slate-600">@{citizen.gamertag} · {maskCpf(citizen.cpf)}</p><p className="mt-3 text-sm text-slate-600">Saldo: <strong className="text-slate-900">{citizen.balance.toLocaleString("pt-BR")} ecocoins</strong></p></div></div>
-          {citizen.balance < selectedItem.value ? <p className="mt-4 rounded-xl bg-red-100 p-3 text-sm font-semibold text-red-700">Saldo insuficiente para realizar esta troca.</p> : <button type="button" onClick={confirmExchange} className="mt-5 w-full rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg hover:bg-emerald-700">Confirmar cliente e realizar troca</button>}
-        </div>}
-      </div>}
+  async function checkout() {
+    if (!cart?.items.length || inFlight.current) return;
+    setConfirmation(null);
+    setCheckoutUnconfirmed(true);
+    await perform(async () => {
+      const { data } = await http.post<Receipt>(cartsUrl + "/" + cart.id + "/checkout", { expectedTotal: totalInCoins });
+      setReceipt(data);
+      setCheckoutUnconfirmed(false);
+      setCart(null);
+      setBuyer(null);
+      setCpf("");
+    }, async (error) => {
+      if (!isAxiosError(error) || !error.response || error.response.status >= 500) return;
+      setCheckoutUnconfirmed(false);
+      if (error.response.status === 412) {
+        const updated = await http.get<Cart>(cartsUrl + "/" + cart.id).catch(() => null);
+        if (updated) setCart(updated.data);
+      }
+    });
+  }
 
-      {receipt && <div><div className="text-center"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700"><CheckCircle2 size={32} /></div><p className="mt-4 text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">Troca concluída</p><h3 className="mt-1 text-xl font-bold">Comprovante da troca</h3></div><div className="mt-5 space-y-3 rounded-2xl bg-slate-50 p-4 text-sm"><p className="flex justify-between gap-4"><span>Protocolo</span><strong>{receipt.protocol}</strong></p><p className="flex justify-between gap-4"><span>Munícipe</span><strong className="text-right">{receipt.citizen.name}</strong></p><p className="flex justify-between gap-4"><span>Gamertag</span><strong>@{receipt.citizen.gamertag}</strong></p><p className="flex justify-between gap-4"><span>Item</span><strong className="text-right">{receipt.item.name}</strong></p><p className="flex justify-between gap-4"><span>Valor</span><strong>{receipt.item.value.toLocaleString("pt-BR")} ecocoins</strong></p><p className="flex justify-between gap-4"><span>Saldo anterior</span><strong>{receipt.previousBalance.toLocaleString("pt-BR")}</strong></p><p className="flex justify-between gap-4"><span>Saldo restante</span><strong className="text-emerald-700">{receipt.remainingBalance.toLocaleString("pt-BR")}</strong></p><p className="flex justify-between gap-4"><span>Operador</span><strong>{receipt.operator}</strong></p><p className="flex justify-between gap-4"><span>Data</span><strong className="text-right">{receipt.createdAt.toLocaleString("pt-BR")}</strong></p></div><div className="mt-5 grid grid-cols-2 gap-3"><button type="button" onClick={() => window.print()} className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700"><Printer size={17} />Imprimir</button><button type="button" onClick={close} className="rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white">Concluir</button></div></div>}
-    </Modal>
-  </section>;
+  async function cancelCart() {
+    if (!cart || inFlight.current || checkoutUnconfirmed) return;
+    setConfirmation(null);
+    await perform(async () => {
+      await http.delete(cartsUrl + "/" + cart.id);
+      setCart(null);
+      setBuyer(null);
+      setCpf("");
+    });
+  }
+
+  function closeLookupFeedback() {
+    if (inFlight.current) return;
+    setBuyer(null);
+    setError("");
+  }
+
+  return (
+    <section className="space-y-6">
+      <ErrorModal open={confirmation === "cancel"} onClose={() => setConfirmation(null)} onConfirm={cancelCart}
+        title="Tem certeza que deseja cancelar?"
+        message="Os itens serão removidos do carrinho. Nenhum ecocoin será debitado."
+        closeLabel="Voltar" confirmLabel="Confirmar cancelamento" />
+      <SuccessModal open={confirmation === "checkout"} onClose={() => setConfirmation(null)} onConfirm={checkout}
+        title="Finalizar venda?"
+        message={`Confirme o débito de ${coins(totalInCoins)} ecocoins do saldo do munícipe.`}
+        closeLabel="Voltar" confirmLabel="Confirmar venda" />
+      <SuccessModal open={!!addedItem} onClose={() => setAddedItem(null)}
+        title="Item adicionado ao carrinho" message={addedItem?.name} />
+      <ErrorModal open={!!error} onClose={cart ? () => setError("") : closeLookupFeedback}
+        title="Não foi possível continuar" message={error} closeLabel="Voltar" />
+      <SuccessModal open={!cart && !!buyer && !error} onClose={closeLookupFeedback} onConfirm={openCart}
+        title="Munícipe localizado" message={buyer?.pendingActivation ? "A ativação do cadastro está pendente." : "Você já pode abrir o carrinho deste munícipe."}
+        closeLabel="Voltar" confirmLabel={busy ? "Abrindo..." : "Ir ao carrinho"} confirmDisabled={busy} />
+      {receipt && (
+        <div className={card} role="status">
+          <h3 className="text-xl font-bold">Venda concluída</h3>
+          <p>Protocolo {receipt.protocol ?? receipt.saleId}</p>
+          <dl className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
+            <div><dt className="text-slate-600">Comprador</dt><dd className="font-semibold">{receipt.buyerName || "Nome indisponível"}</dd></div>
+            <div><dt className="text-slate-600">Vendedor</dt><dd className="font-semibold">{receipt.sellerName || "Nome indisponível"}</dd></div>
+          </dl>
+          <p>{coins(receipt.total)} ecocoins debitados · Saldo restante de {coins(receipt.ecoCoinBalance)} ecocoins</p>
+          <button type="button" className={action} onClick={() => onViewProtocol(receipt.protocol ?? receipt.saleId)}>Ver no histórico</button>
+        </div>
+      )}
+      {!cart ? (
+        <form className={card} onSubmit={lookup}>
+          <h3 className="text-xl font-bold">Localizar munícipe</h3>
+          <FormInput id="sale-cpf" label="CPF" value={cpf} onChange={(event) => {
+            setCpf(inputMasks.cpf(event.target.value));
+            setBuyer(null);
+          }} inputMode="numeric" placeholder="000.000.000-00" required readOnly={busy || !!buyer || !!error} />
+          <button className={action} disabled={busy || !!buyer || !!error || !isValidCpf(cpf)}>{busy ? "Consultando..." : "Consultar"}</button>
+        </form>
+      ) : (
+        <div className={card} inert={confirmation !== null}>
+          <header className="flex flex-wrap items-start justify-between gap-3">
+            <h3 className="pt-2 text-xl font-bold">Carrinho</h3>
+            <dl className="ml-auto flex max-w-full flex-wrap justify-end gap-2">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5">
+                <dt className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+                  <Hash size={14} aria-hidden="true" />Código
+                </dt>
+                <dd className="mt-1 text-sm font-bold">{cart.id.slice(0, 8)}</dd>
+              </div>
+              {buyer?.id === cart.buyerId && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 px-4 py-2.5 text-emerald-950 dark:border-emerald-900 dark:bg-emerald-950/45 dark:text-emerald-100">
+                  <dt className="flex items-center gap-1.5 text-xs font-semibold">
+                    <Wallet size={14} aria-hidden="true" />Saldo
+                  </dt>
+                  <dd className="mt-1 text-sm font-bold">{coins(buyer.ecoCoinBalance)} ecocoins</dd>
+                </div>
+              )}
+            </dl>
+          </header>
+          <section aria-labelledby="cart-items-heading" className="mt-7 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 sm:px-5">
+            <h4 id="cart-items-heading" className="font-semibold">Itens do carrinho</h4>
+            {!cart.items.length ? (
+              <p className="mt-2 text-sm text-slate-600">Adicione produtos pelo carrossel abaixo.</p>
+            ) : (
+              <ul className="mt-3 divide-y divide-slate-200 border-t border-slate-200 dark:divide-slate-700">
+                {cart.items.map((item) => (
+                  <li key={item.productId} className="flex flex-wrap items-center justify-between gap-3 py-3 last:pb-0">
+                    <div className="min-w-0">
+                      <p className="break-words text-sm font-semibold">{item.quantity} × {item.product.name}</p>
+                      <p className="mt-0.5 text-sm text-slate-600">{coins(Number(item.product.price) * item.quantity)} ecocoins</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button type="button" className="rounded-lg border border-slate-200 px-3 py-1 disabled:opacity-50" aria-label={"Diminuir quantidade de " + item.product.name} disabled={busy || checkoutUnconfirmed || item.quantity <= 1} onClick={() => void updateItem(item.product, item.quantity - 1)}>−</button>
+                      <button type="button" className="text-sm underline disabled:opacity-50" disabled={busy || checkoutUnconfirmed} onClick={() => void updateItem(item.product, 0)}>Remover</button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+          <div className="flex flex-wrap items-center gap-3 py-2">
+            <p className="w-full font-semibold sm:w-auto">Total de {coins(totalInCoins)} ecocoins</p>
+            <button type="button" className={action} disabled={busy || !cart.items.length} onClick={() => {
+              if (checkoutUnconfirmed) void checkout();
+              else setConfirmation("checkout");
+            }}>
+              {checkoutUnconfirmed ? "Confirmar resultado da venda" : "Finalizar venda"}
+            </button>
+            <button type="button" className="ml-auto rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/45" disabled={busy || checkoutUnconfirmed} onClick={() => setConfirmation("cancel")}>Cancelar carrinho</button>
+          </div>
+          <ProductCarousel
+            disabled={busy || checkoutUnconfirmed}
+            quantityInCart={(id) => cart.items.find((item) => item.productId === id)?.quantity ?? 0}
+            onAdd={addItem}
+          />
+        </div>
+      )}
+    </section>
+  );
 }

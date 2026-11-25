@@ -4,47 +4,39 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import verifiedImage from "@/assets/Images/Verified.png";
 import { authService } from "@/app/service/api/authService";
+import { demoCode, demoEnabled } from "@/app/service/api/demo-config";
 import { useRouter } from "next/navigation";
 import { useGlobalModalStore } from "@/stores/useGlobalModalStore";
 import {
+  clearAuthSession,
   getRoleHomePath,
+  getTokenRole,
   isJwtValid,
   storeAuthSession,
 } from "@/app/service/api/auth-session";
 
-interface Props {
-  email: string;
-  challengeId: string;
-}
+type Challenge = { email: string; challengeId: string; remember: boolean };
 
-export const VerifyCode = ({ email, challengeId }: Props) => {
+export const VerifyCode = () => {
+  const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const showError = useGlobalModalStore((state) => state.showError);
-  const hasFlowData = Boolean(email && challengeId);
   // codeInputs state: array of 6 chars
   const digits = 6;
   const [values, setValues] = useState<string[]>(Array(digits).fill(""));
   const inputsRef = React.useRef<Array<HTMLInputElement | null>>([]);
 
   useEffect(() => {
-    if (!hasFlowData) {
+    try {
+      const parsed = JSON.parse(sessionStorage.getItem("loginChallenge") ?? "null") as Challenge | null;
+      if (!parsed?.email || !parsed.challengeId) throw new Error();
+      queueMicrotask(() => setChallenge(parsed));
+    } catch {
+      sessionStorage.removeItem("loginChallenge");
       router.replace("/Auth/Login");
     }
-  }, [hasFlowData, router]);
-
-  const onResend = async () => {
-    setLoading(true);
-    try {
-      await authService.resendCode({ email, challengeId });
-    } catch {
-      showError("Erro ao reenviar código.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // values -> joinedCode is derived when needed
+  }, [router]);
 
   const handleChange = (index: number, val: string) => {
     if (!/^[0-9]?$/.test(val)) return;
@@ -88,7 +80,7 @@ export const VerifyCode = ({ email, challengeId }: Props) => {
 
   const joinedCode = values.join("");
 
-  if (!hasFlowData) {
+  if (!challenge) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 px-6 text-slate-800 dark:bg-[#07100b] dark:text-slate-100">
         <div className="text-center">
@@ -110,7 +102,8 @@ export const VerifyCode = ({ email, challengeId }: Props) => {
           Verificação de código
         </h2>
         <p className="mb-4 text-center text-sm text-slate-600">
-          Enviamos um código para o e-mail <strong>{email}</strong>
+          {demoEnabled ? <>Código de demonstração <strong>{demoCode}</strong></> :
+            <>Enviamos um código para o e-mail <strong>{challenge.email}</strong></>}
         </p>
 
         <div className="flex items-center justify-center gap-3">
@@ -144,11 +137,11 @@ export const VerifyCode = ({ email, challengeId }: Props) => {
 
         <div className="mt-6 flex gap-3">
           <button
-            onClick={onResend}
+            onClick={() => router.replace("/Auth/Login")}
             disabled={loading}
             className="flex-1 rounded-lg border border-slate-200 py-3 text-sm font-medium text-slate-600"
           >
-            Reenviar código
+            Voltar ao login
           </button>
 
           <button
@@ -156,36 +149,25 @@ export const VerifyCode = ({ email, challengeId }: Props) => {
               (async () => {
                 setLoading(true);
                 try {
-                  const resp = await authService.verifyCode({
-                    email,
-                    code: joinedCode,
-                    challengeId,
-                  });
-                  const jwt = resp?.data?.jwt;
-                  const roleId = resp?.data?.user?.role?.id;
-                  const userDisplayName =
-                    resp?.data?.user?.nome ??
-                    resp?.data?.user?.name ??
-                    resp?.data?.user?.username;
-
-                  if (!jwt || !isJwtValid(jwt)) {
-                    showError("O servidor não retornou um JWT válido.");
+                  const result = await authService.verifyCode({ code: joinedCode, challengeId: challenge.challengeId });
+                  sessionStorage.removeItem("loginChallenge");
+                  if ("firstLoginToken" in result) {
+                    clearAuthSession();
+                    sessionStorage.setItem("firstLoginToken", JSON.stringify({
+                      token: result.firstLoginToken, email: challenge.email, remember: challenge.remember,
+                    }));
+                    router.replace("/Auth/FirstLogin");
                     return;
                   }
-
-                  storeAuthSession({
-                    jwt,
-                    roleId,
-                    userName: userDisplayName,
-                    userEmail: email,
-                  });
-
-                  if (roleId === 4 || roleId === 5) {
-                    router.push(getRoleHomePath(roleId));
+                  const { token } = result;
+                  const role = getTokenRole(token);
+                  if (!isJwtValid(token) || !role) {
+                    showError("Acesso não autorizado para este usuário.");
+                    router.replace("/Auth/Login");
                     return;
                   }
-
-                  showError("Acesso não autorizado para este usuário.");
+                  storeAuthSession(token, challenge.email, challenge.remember);
+                  router.replace(getRoleHomePath(role));
                 } catch {
                   showError("Código inválido ou expirado.");
                 } finally {

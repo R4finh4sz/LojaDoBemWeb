@@ -13,9 +13,10 @@ export const GlobalModalHost = () => {
   const successOpen = useGlobalModalStore((state) => state.successOpen);
   const successMessage = useGlobalModalStore((state) => state.successMessage);
   const hideSuccess = useGlobalModalStore((state) => state.hideSuccess);
+  const goBackOnSuccessClose = useGlobalModalStore((state) => state.goBackOnSuccessClose);
   const closeSuccess = () => {
     hideSuccess();
-    router.back();
+    if (goBackOnSuccessClose) router.back();
   };
 
   return (

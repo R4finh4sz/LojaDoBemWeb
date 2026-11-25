@@ -1,74 +1,28 @@
 import { http } from "./http";
+import { clearAuthSession } from "./auth-session";
 
-type LoginForm = {
-  email: string;
-  password: string;
-  rememberMe: boolean;
-};
+type LoginResponse =
+  | { twoFactorRequired: false; token: string }
+  | { twoFactorRequired?: true; challengeId: string };
 
-type AuthUser = {
-  id?: number;
-  email?: string;
-  nome?: string;
-  name?: string;
-  username?: string;
-  avatarUrl?: string;
-  photoUrl?: string;
-  role?: { id?: number };
-};
-
-type LoginResponse = {
-  data: {
-    jwt?: string;
-    requiresTwoFactor?: boolean;
-    challengeId?: string;
-    user?: AuthUser;
-  };
-  message?: string;
-};
-
-type VerifyResponse = {
-  data: {
-    jwt?: string;
-    refreshToken?: string;
-    user?: AuthUser;
-  };
-  message?: string;
-};
+type VerifyCodeResponse = { token: string } | { firstLogin: true; firstLoginToken: string };
 
 export const authService = {
-  login: async (form: LoginForm) => {
-    const payload = {
-      email: form.email,
-      password: form.password,
-      rememberMe: form.rememberMe,
-    };
-    const { data } = await http.post<LoginResponse>(
-      `master/auth/local`,
-      payload,
-    );
+  async login(payload: { email: string; password: string }) {
+    const { data } = await http.post<LoginResponse>("auth/login", payload);
     return data;
   },
-
-  verifyCode: async (payload: {
-    email: string;
-    code: string;
-    challengeId: string;
-  }) => {
-    const { data } = await http.post<VerifyResponse>(
-      `auth/local/verify-code`,
-      payload,
-    );
+  async verifyCode(payload: { challengeId: string; code: string }) {
+    const { data } = await http.post<VerifyCodeResponse>("auth/2fa/verify", payload);
     return data;
   },
-
-  resendCode: async (payload: { email: string; challengeId: string }) => {
-    const { data } = await http.post<LoginResponse>(
-      `auth/local/resend-code`,
-      payload,
-    );
-    return data;
+  async logout() {
+    try {
+      await http.post("auth/logout");
+    } catch {
+      // Clear the local session even when the server is unreachable.
+    } finally {
+      clearAuthSession();
+    }
   },
 };
-
-export default authService;

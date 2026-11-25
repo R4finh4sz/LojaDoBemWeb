@@ -7,8 +7,10 @@ import { useRouter } from "next/navigation";
 import { CheckSquare, Square } from "lucide-react";
 
 import logoImage from "@/assets/Images/LogoImage.png";
-import { mockCredentials, mockLogin, type MockRole } from "@/app/service/api/mock-auth";
-import { getRoleHomePath, isJwtValid, storeAuthSession } from "@/app/service/api/auth-session";
+import { getRoleHomePath, getTokenRole, isJwtValid, storeAuthSession } from "@/app/service/api/auth-session";
+import { authService } from "@/app/service/api/authService";
+import { demoAccounts, demoEnabled, demoPassword } from "@/app/service/api/demo-config";
+import { apiError } from "@/app/service/api/http";
 import { AuthHeader } from "@/components/ui/auth-header";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { FormInput } from "@/components/ui/form-input";
@@ -23,22 +25,30 @@ export const LoginPage = () => {
     useForm<LoginInput>({ resolver: zodResolver(loginSchema), mode: "onChange" });
   const remember = useWatch({ control, name: "rememberMe", defaultValue: false }) ?? false;
 
-  const fillDemoAccess = (role: MockRole) => {
-    setValue("email", mockCredentials[role].email, { shouldValidate: true });
-    setValue("password", mockCredentials[role].password, { shouldValidate: true });
-  };
-
   const onSubmit = async (data: LoginInput) => {
     setLoading(true);
     try {
-      const session = await mockLogin(data);
-      if (isJwtValid(session.jwt)) storeAuthSession(session);
-
-      // O contrato fica pronto para o backend reativar o 2FA quando necessário.
-      if (session.requiresTwoFactor) return;
-      router.replace(getRoleHomePath(session.roleId));
+      const result = await authService.login({ email: data.email, password: data.password });
+      sessionStorage.removeItem("loginChallenge");
+      sessionStorage.removeItem("firstLoginToken");
+      if (result.twoFactorRequired === false) {
+        const role = getTokenRole(result.token);
+        if (!role || !isJwtValid(result.token)) {
+          showError("O perfil desta conta não tem acesso ao painel web ou a sessão é inválida.");
+          return;
+        }
+        storeAuthSession(result.token, data.email, remember);
+        router.replace(getRoleHomePath(role));
+        return;
+      }
+      if (!result.challengeId) {
+        showError("Não foi possível iniciar a verificação em duas etapas.");
+        return;
+      }
+      sessionStorage.setItem("loginChallenge", JSON.stringify({ challengeId: result.challengeId, email: data.email, remember }));
+      router.push("/Auth/VerifyCode");
     } catch (error) {
-      showError(error instanceof Error ? error.message : "Não foi possível entrar.");
+      showError(apiError(error, "Não foi possível entrar."));
     } finally {
       setLoading(false);
     }
@@ -51,21 +61,27 @@ export const LoginPage = () => {
       <main className="flex flex-1 items-center justify-center px-6 py-12">
         <div className="w-full max-w-lg rounded-3xl bg-white px-8 py-10 shadow-[0_24px_70px_rgba(15,23,42,0.20)] ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-700 sm:px-12 sm:py-12">
           <div className="mb-7 text-center">
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900">Bem-vindo de volta</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900">Seja Bem-vindo</h1>
             <p className="mx-auto mt-3 max-w-sm text-base leading-7 text-slate-600">
-              Escolha um perfil de demonstração ou informe as credenciais mockadas.
+              Insira suas credenciais para acessar o painel administrativo do sistema de gestão de resíduos sólidos.
             </p>
           </div>
 
-          <div className="mb-7 grid grid-cols-2 gap-3">
-            {(["master", "admin"] as const).map((role) => (
-              <button key={role} type="button" onClick={() => fillDemoAccess(role)}
-                className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm font-semibold capitalize text-emerald-800 shadow-[0_6px_18px_rgba(15,23,42,0.10)] transition hover:-translate-y-0.5 hover:bg-emerald-100 dark:border-slate-700 dark:bg-slate-800 dark:text-emerald-300 dark:hover:bg-slate-700">
-                Acessar como {role}
-              </button>
-            ))}
-          </div>
-
+          {demoEnabled && (
+            <section className="mb-7 rounded-xl bg-emerald-50 p-4 dark:bg-slate-800">
+              <p className="mb-3 text-sm font-semibold text-emerald-800 dark:text-emerald-300">Demonstração · escolha um perfil</p>
+              <div className="flex flex-wrap gap-2">
+                {demoAccounts.map(({ label, email }) => (
+                  <button key={email} type="button" onClick={() => {
+                    setValue("email", email, { shouldValidate: true });
+                    setValue("password", demoPassword, { shouldValidate: true });
+                  }} className="rounded-lg border border-emerald-300 px-3 py-2 text-sm font-semibold">
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <FormInput {...register("email")} id="email" type="email" label="E-mail" placeholder="voce@exemplo.com" error={errors.email} />
             <div>
