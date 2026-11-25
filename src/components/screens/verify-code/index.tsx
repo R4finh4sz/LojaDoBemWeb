@@ -8,6 +8,7 @@ import { demoCode, demoEnabled } from "@/app/service/api/demo-config";
 import { useRouter } from "next/navigation";
 import { useGlobalModalStore } from "@/stores/useGlobalModalStore";
 import {
+  clearAuthSession,
   getRoleHomePath,
   getTokenRole,
   isJwtValid,
@@ -148,9 +149,18 @@ export const VerifyCode = () => {
               (async () => {
                 setLoading(true);
                 try {
-                  const { token } = await authService.verifyCode({ code: joinedCode, challengeId: challenge.challengeId });
-                  const role = getTokenRole(token);
+                  const result = await authService.verifyCode({ code: joinedCode, challengeId: challenge.challengeId });
                   sessionStorage.removeItem("loginChallenge");
+                  if ("firstLoginToken" in result) {
+                    clearAuthSession();
+                    sessionStorage.setItem("firstLoginToken", JSON.stringify({
+                      token: result.firstLoginToken, email: challenge.email, remember: challenge.remember,
+                    }));
+                    router.replace("/Auth/FirstLogin");
+                    return;
+                  }
+                  const { token } = result;
+                  const role = getTokenRole(token);
                   if (!isJwtValid(token) || !role) {
                     showError("Acesso não autorizado para este usuário.");
                     router.replace("/Auth/Login");

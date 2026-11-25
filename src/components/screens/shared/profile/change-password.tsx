@@ -1,10 +1,15 @@
 "use client";
 
-import { CheckCircle2, KeyRound, Mail } from "lucide-react";
+import { KeyRound, Mail } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import { authService } from "@/app/service/api/authService";
 import { demoCode, demoEnabled } from "@/app/service/api/demo-config";
 import { apiError, http } from "@/app/service/api/http";
 import { FormInput } from "@/components/ui/form-input";
+import { VerificationCodeInput } from "@/components/ui/verification-code-input";
+import { useCodeResend } from "@/hooks/use-code-resend";
+import { useGlobalModalStore } from "@/stores/useGlobalModalStore";
 import { forgotPasswordResetSchema } from "@/validation/forgot-password";
 
 type Step =
@@ -17,10 +22,18 @@ const primary = "inline-flex items-center justify-center gap-2 rounded-xl bg-eme
 const secondary = "rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50 dark:hover:bg-slate-800";
 
 export function ChangePassword({ email, managed }: { email: string; managed: boolean }) {
+  const router = useRouter();
+  const showSuccess = useGlobalModalStore((state) => state.showSuccess);
   const [step, setStep] = useState<Step>({ kind: "request" });
   const [code, setCode] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const resend = useCodeResend();
+  const passwordsDiffer = Boolean(confirmPassword && password !== confirmPassword);
+  const passwordValid = forgotPasswordResetSchema.safeParse({ password, confirmPassword }).success &&
+    new TextEncoder().encode(password).length <= 72;
 
   async function run(operation: () => Promise<void>, fallback: string) {
     if (busy) return;
@@ -35,9 +48,11 @@ export function ChangePassword({ email, managed }: { email: string; managed: boo
     }
   }
 
-  function requestCode() {
+  function requestCode(isResend = false) {
+    if (busy || (isResend && !resend.tryResend())) return;
     void run(async () => {
       const { data } = await http.post<{ challengeId: string }>("account/password/code");
+      if (!isResend) resend.start();
       setCode("");
       setStep({ kind: "verify", challengeId: data.challengeId });
     }, "Não foi possível enviar o código.");
@@ -76,6 +91,9 @@ export function ChangePassword({ email, managed }: { email: string; managed: boo
         passwordConfirmation: parsed.data.confirmPassword,
       });
       setStep({ kind: "complete" });
+      await authService.logout();
+      router.replace("/Auth/Login");
+      showSuccess("Senha alterada com sucesso. Entre novamente com a nova senha.");
     }, "Não foi possível salvar a nova senha.");
   }
 
@@ -91,7 +109,7 @@ export function ChangePassword({ email, managed }: { email: string; managed: boo
               <p className="text-sm leading-relaxed text-slate-600">
                 Envie um código para {email ? <strong>{email}</strong> : "o e-mail da sua conta"} para confirmar a alteração.
               </p>
-              <button type="button" className={primary} onClick={requestCode} disabled={busy}>
+              <button type="button" className={primary} onClick={() => requestCode()} disabled={busy}>
                 <Mail size={17} aria-hidden="true" />{busy ? "Enviando..." : "Enviar código"}
               </button>
             </>
@@ -102,31 +120,27 @@ export function ChangePassword({ email, managed }: { email: string; managed: boo
                 {demoEnabled ? <>Use o código de demonstração <strong>{demoCode}</strong>.</> :
                   <>Digite o código de seis dígitos enviado para {email || "seu e-mail"}.</>}
               </p>
-              <FormInput id="profile-password-code" label="Código de verificação" inputMode="numeric" autoComplete="one-time-code"
-                maxLength={6} value={code} disabled={busy} onChange={(event) => setCode(event.target.value.replace(/[^0-9]/g, "").slice(0, 6))} />
+              <VerificationCodeInput value={code} onChange={setCode} disabled={busy} />
               <div className="flex flex-wrap gap-3">
                 <button type="submit" className={primary} disabled={busy || code.length !== 6}>Verificar código</button>
-                <button type="button" className={secondary} onClick={requestCode} disabled={busy}>Reenviar código</button>
+                <button type="button" className={secondary} onClick={() => requestCode(true)} disabled={busy || resend.blocked}>{resend.label}</button>
               </div>
             </form>
           )}
           {step.kind === "password" && (
             <form onSubmit={save} className="space-y-4">
               <FormInput id="profile-new-password" label="Nova senha" name="password" type="password" autoComplete="new-password"
-                helpText="Use pelo menos 8 caracteres e no máximo 72 bytes." required disabled={busy} />
-              <FormInput id="profile-confirm-password" label="Confirmar nova senha" name="confirmPassword" type="password" autoComplete="new-password" required disabled={busy} />
+                helpText="Use pelo menos 8 caracteres e no máximo 72 bytes." required disabled={busy}
+                value={password} onChange={(event) => setPassword(event.target.value)} />
+              <FormInput id="profile-confirm-password" label="Confirmar nova senha" name="confirmPassword" type="password" autoComplete="new-password" required disabled={busy}
+                value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} />
+              {passwordsDiffer && <p className="text-sm text-red-700 dark:text-red-300">As senhas não coincidem.</p>}
               <div className="flex flex-wrap gap-3">
-                <button type="submit" className={primary} disabled={busy}>
+                <button type="submit" className={primary} disabled={busy || !passwordValid}>
                   <KeyRound size={17} aria-hidden="true" />{busy ? "Salvando..." : "Salvar nova senha"}
                 </button>
               </div>
             </form>
-          )}
-          {step.kind === "complete" && (
-            <div role="status" className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50/75 p-4 text-emerald-950 dark:border-emerald-900 dark:bg-emerald-950/45 dark:text-emerald-100">
-              <CheckCircle2 size={22} aria-hidden="true" className="shrink-0" />
-              <p className="text-sm"><strong>Senha alterada com sucesso.</strong> Você continua conectado nesta sessão.</p>
-            </div>
           )}
           {error && <p role="alert" className="text-sm text-red-700 dark:text-red-300">{error}</p>}
         </>

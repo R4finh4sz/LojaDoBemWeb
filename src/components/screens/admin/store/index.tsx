@@ -2,11 +2,10 @@
 
 import { isAxiosError } from "axios";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Hash, ShoppingBag, Trash2, Wallet } from "lucide-react";
+import { Hash, Wallet } from "lucide-react";
 import { apiError, http } from "@/app/service/api/http";
 import { FormInput } from "@/components/ui/form-input";
 import ErrorModal from "@/components/ui/modal/ErrorModal";
-import Modal from "@/components/ui/modal/Modal";
 import SuccessModal from "@/components/ui/modal/SuccessModal";
 import { inputMasks } from "@/utils/input-masks";
 import { isValidCpf } from "@/validation/citizen-registration";
@@ -138,32 +137,21 @@ export function AdminStore({ onViewProtocol }: { onViewProtocol: (protocol: stri
 
   return (
     <section className="space-y-6">
-      <Modal open={confirmation !== null} onClose={() => setConfirmation(null)}>
-        <div className="space-y-4">
-          {confirmation === "cancel" ? <Trash2 size={24} aria-hidden="true" className="text-red-700 dark:text-red-300" /> :
-            <ShoppingBag size={24} aria-hidden="true" className="text-emerald-700 dark:text-emerald-300" />}
-          <h3 className="text-xl font-bold text-slate-900">{confirmation === "cancel" ? "Tem certeza que deseja cancelar?" : "Finalizar venda?"}</h3>
-          <p className="text-sm text-slate-600">
-            {confirmation === "cancel" ? "Os itens serão removidos do carrinho. Nenhum ecocoin será debitado." :
-              <>Confirme o débito de <strong>{coins(totalInCoins)} ecocoins</strong> do saldo do munícipe.</>}
-          </p>
-          <div className="flex flex-wrap justify-end gap-3">
-            <button type="button" onClick={() => setConfirmation(null)}
-              className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-800">Voltar</button>
-            {confirmation === "cancel" ? (
-              <button type="button" onClick={cancelCart} className="rounded-xl bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800">Confirmar cancelamento</button>
-            ) : <button type="button" onClick={checkout} className={action}>Confirmar venda</button>}
-          </div>
-        </div>
-      </Modal>
+      <ErrorModal open={confirmation === "cancel"} onClose={() => setConfirmation(null)} onConfirm={cancelCart}
+        title="Tem certeza que deseja cancelar?"
+        message="Os itens serão removidos do carrinho. Nenhum ecocoin será debitado."
+        closeLabel="Voltar" confirmLabel="Confirmar cancelamento" />
+      <SuccessModal open={confirmation === "checkout"} onClose={() => setConfirmation(null)} onConfirm={checkout}
+        title="Finalizar venda?"
+        message={`Confirme o débito de ${coins(totalInCoins)} ecocoins do saldo do munícipe.`}
+        closeLabel="Voltar" confirmLabel="Confirmar venda" />
       <SuccessModal open={!!addedItem} onClose={() => setAddedItem(null)}
         title="Item adicionado ao carrinho" message={addedItem?.name} />
-      <ErrorModal open={!cart && !!error} onClose={closeLookupFeedback}
+      <ErrorModal open={!!error} onClose={cart ? () => setError("") : closeLookupFeedback}
         title="Não foi possível continuar" message={error} closeLabel="Voltar" />
       <SuccessModal open={!cart && !!buyer && !error} onClose={closeLookupFeedback} onConfirm={openCart}
         title="Munícipe localizado" message={buyer?.pendingActivation ? "A ativação do cadastro está pendente." : "Você já pode abrir o carrinho deste munícipe."}
         closeLabel="Voltar" confirmLabel={busy ? "Abrindo..." : "Ir ao carrinho"} confirmDisabled={busy} />
-      {cart && error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950/45 dark:text-red-300">{error}</p>}
       {receipt && (
         <div className={card} role="status">
           <h3 className="text-xl font-bold">Venda concluída</h3>
@@ -183,7 +171,7 @@ export function AdminStore({ onViewProtocol }: { onViewProtocol: (protocol: stri
             setCpf(inputMasks.cpf(event.target.value));
             setBuyer(null);
           }} inputMode="numeric" placeholder="000.000.000-00" required readOnly={busy || !!buyer || !!error} />
-          <button className={action} disabled={busy || !!buyer || !!error}>{busy ? "Consultando..." : "Consultar"}</button>
+          <button className={action} disabled={busy || !!buyer || !!error || !isValidCpf(cpf)}>{busy ? "Consultando..." : "Consultar"}</button>
         </form>
       ) : (
         <div className={card} inert={confirmation !== null}>

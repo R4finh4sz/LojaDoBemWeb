@@ -52,7 +52,7 @@ export function SaleHistory({ initialProtocol = "" }: { initialProtocol?: string
               onChange={(event) => { setInput(event.target.value); setInvalid(false); }}
               error={invalid ? { type: "validate", message: "Informe o protocolo completo do comprovante." } : undefined} />
           </div>
-          <button type="submit" className={action + " inline-flex items-center gap-2"}>
+          <button type="submit" disabled={!protocolPattern.test(input.trim())} className={action + " inline-flex items-center gap-2"}>
             <Search size={16} aria-hidden="true" />Pesquisar
           </button>
         </div>

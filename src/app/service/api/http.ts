@@ -10,7 +10,7 @@ export const http = axios.create({
 http.interceptors.request.use(async (config) => {
   if (demoEnabled) config.adapter = (await import("./demo-adapter")).demoAdapter;
   const token = getAccessToken();
-  if (token) config.headers.set("Authorization", "Bearer " + token);
+  if (token && !config.headers.has("Authorization")) config.headers.set("Authorization", "Bearer " + token);
   return config;
 });
 

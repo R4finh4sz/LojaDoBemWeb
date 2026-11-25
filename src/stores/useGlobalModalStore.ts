@@ -9,7 +9,8 @@ type GlobalModalState = {
   hideError: () => void;
   successMessage: string;
   successOpen: boolean;
-  showSuccess: (message: string) => void;
+  goBackOnSuccessClose: boolean;
+  showSuccess: (message: string, options?: { goBackOnClose?: boolean }) => void;
   hideSuccess: () => void;
 };
 
@@ -20,6 +21,11 @@ export const useGlobalModalStore = create<GlobalModalState>((set) => ({
   hideError: () => set({ errorMessage: "", errorOpen: false }),
   successMessage: "",
   successOpen: false,
-  showSuccess: (message) => set({ successMessage: message, successOpen: true }),
-  hideSuccess: () => set({ successMessage: "", successOpen: false }),
+  goBackOnSuccessClose: false,
+  showSuccess: (message, options) => set({
+    successMessage: message,
+    successOpen: true,
+    goBackOnSuccessClose: options?.goBackOnClose ?? false,
+  }),
+  hideSuccess: () => set({ successMessage: "", successOpen: false, goBackOnSuccessClose: false }),
 }));

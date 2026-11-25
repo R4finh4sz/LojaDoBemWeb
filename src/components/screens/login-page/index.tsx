@@ -30,6 +30,7 @@ export const LoginPage = () => {
     try {
       const result = await authService.login({ email: data.email, password: data.password });
       sessionStorage.removeItem("loginChallenge");
+      sessionStorage.removeItem("firstLoginToken");
       if (result.twoFactorRequired === false) {
         const role = getTokenRole(result.token);
         if (!role || !isJwtValid(result.token)) {
