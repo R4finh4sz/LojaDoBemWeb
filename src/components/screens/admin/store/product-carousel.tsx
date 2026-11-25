@@ -145,7 +145,7 @@ export function ProductCarousel({ disabled, quantityInCart, onAdd }: Props) {
               setLoadingMore(false);
             }}
             className="min-w-0 flex-1 bg-transparent py-3 text-sm outline-none" />
-          <button type="submit" aria-label="Adicionar pelo código de barras" disabled={!query || disabled || scanning} className="rounded-lg p-2 text-emerald-800 disabled:opacity-50 dark:text-emerald-300">
+          <button type="submit" aria-label="Adicionar pelo código de barras" disabled={!barcodePattern.test(query) || disabled || scanning} className="rounded-lg p-2 text-emerald-800 disabled:opacity-50 dark:text-emerald-300">
             <ScanBarcode size={20} aria-hidden="true" />
           </button>
         </div>

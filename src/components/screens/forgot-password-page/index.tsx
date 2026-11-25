@@ -1,15 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { useRouter } from "next/navigation";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import logoImage from "@/assets/Images/LogoImage.png";
 import { AuthHeader } from "@/components/ui/auth-header";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
+import { getAccessToken } from "@/app/service/api/auth-session";
+import { authService } from "@/app/service/api/authService";
 import { apiError, http } from "@/app/service/api/http";
 import { useGlobalModalStore } from "@/stores/useGlobalModalStore";
 import { FormInput } from "@/components/ui/form-input";
+import { VerificationCodeInput } from "@/components/ui/verification-code-input";
+import { useCodeResend } from "@/hooks/use-code-resend";
 import {
   forgotPasswordEmailSchema,
   forgotPasswordCodeSchema,
@@ -22,9 +27,11 @@ import {
 type Step = 1 | 2 | 3;
 
 export const ForgotPasswordPage = () => {
+  const router = useRouter();
   const [step, setStep] = useState<Step>(1);
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const resend = useCodeResend();
 
   const emailForm = useForm<ForgotPasswordEmailInput>({
     resolver: zodResolver(forgotPasswordEmailSchema),
@@ -34,6 +41,7 @@ export const ForgotPasswordPage = () => {
   const codeForm = useForm<ForgotPasswordCodeInput>({
     resolver: zodResolver(forgotPasswordCodeSchema),
     mode: "onChange",
+    defaultValues: { code: "" },
   });
 
   const passwordForm = useForm<ForgotPasswordResetInput>({
@@ -45,11 +53,14 @@ export const ForgotPasswordPage = () => {
   const [challengeId, setChallengeId] = useState("");
   const [resetToken, setResetToken] = useState("");
   const showError = useGlobalModalStore((state) => state.showError);
+  const showSuccess = useGlobalModalStore((state) => state.showSuccess);
 
-  const handleStep1Submit = async ({ email }: ForgotPasswordEmailInput) => {
+  const requestCode = async ({ email }: ForgotPasswordEmailInput, isResend = false) => {
+    if (loading || (isResend && !resend.tryResend())) return;
     setLoading(true);
     try {
       const { data } = await http.post<{ challengeId: string }>("auth/password/forgot", { email });
+      if (!isResend) resend.start();
       setChallengeId(data.challengeId);
       setResetToken("");
       codeForm.reset();
@@ -80,7 +91,9 @@ export const ForgotPasswordPage = () => {
     setLoading(true);
     try {
       await http.post("auth/password/reset", { resetToken, password: data.password, passwordConfirmation: data.confirmPassword });
-      window.location.replace("/Auth/Login");
+      if (getAccessToken()) await authService.logout();
+      router.replace("/Auth/Login");
+      showSuccess("Senha alterada com sucesso. Entre novamente com a nova senha.");
     } catch (error) {
       showError(apiError(error, "Não foi possível redefinir a senha."));
       setLoading(false);
@@ -189,7 +202,7 @@ export const ForgotPasswordPage = () => {
 
             <div className="space-y-5">
               {step === 1 && (
-                <form onSubmit={emailForm.handleSubmit(handleStep1Submit)}>
+                <form onSubmit={emailForm.handleSubmit((data) => requestCode(data))}>
                   <FormInput
                     {...emailForm.register("email")}
                     id="email"
@@ -218,31 +231,22 @@ export const ForgotPasswordPage = () => {
 
               {step === 2 && (
                 <form onSubmit={codeForm.handleSubmit(handleStep2Submit)}>
-                  <FormInput
-                    {...codeForm.register("code")}
-                    id="code"
-                    type="text"
-                    label="Código de Verificação"
-                    placeholder="000000"
-                    maxLength={6}
-                    error={codeForm.formState.errors.code}
-                    className="text-center text-2xl tracking-widest"
-                    onChange={(e) => {
-                      const value = e.target.value
-                        .replace(/\D/g, "")
-                        .slice(0, 6);
-                      codeForm.setValue("code", value, {
-                        shouldValidate: true,
-                      });
-                    }}
+                  <Controller
+                    name="code"
+                    control={codeForm.control}
+                    render={({ field }) => (
+                      <VerificationCodeInput value={field.value} onChange={field.onChange} disabled={loading} />
+                    )}
                   />
                   <p className="mt-3 text-center text-xs text-slate-500">
                     Não recebeu o código?{" "}
                     <button
                       type="button"
-                      className="font-medium text-emerald-600 transition hover:text-emerald-800"
+                      disabled={loading || resend.blocked}
+                      onClick={() => void emailForm.handleSubmit((data) => requestCode(data, true))()}
+                      className="font-medium text-emerald-600 transition enabled:hover:text-emerald-800 disabled:opacity-60"
                     >
-                      Reenviar
+                      {resend.label}
                     </button>
                   </p>
                   <div className="flex gap-3 pt-4">
@@ -284,39 +288,21 @@ export const ForgotPasswordPage = () => {
                     error={passwordForm.formState.errors.password}
                   />
 
-                  <FormInput
-                    {...passwordForm.register("confirmPassword")}
-                    id="confirmPassword"
-                    type="password"
-                    label="Confirmar Senha"
-                    placeholder="••••••••"
-                    error={passwordForm.formState.errors.confirmPassword}
-                  />
+                  <div className="mt-3">
+                    <FormInput
+                      {...passwordForm.register("confirmPassword")}
+                      id="confirmPassword"
+                      type="password"
+                      label="Confirmar Senha"
+                      placeholder="••••••••"
+                      error={passwordForm.formState.errors.confirmPassword}
+                    />
+                  </div>
 
                   <div className="text-xs text-slate-600">
-                    A senha deve conter:
-                    <ul className="mt-2 space-y-1">
-                      <li
-                        className={`${password?.length >= 8 ? "text-emerald-700" : "text-slate-500"}`}
-                      >
-                        • No mínimo 8 caracteres
-                      </li>
-                      <li
-                        className={`${/[a-z]/.test(password || "") ? "text-emerald-700" : "text-slate-500"}`}
-                      >
-                        • Letras minúsculas
-                      </li>
-                      <li
-                        className={`${/[A-Z]/.test(password || "") ? "text-emerald-700" : "text-slate-500"}`}
-                      >
-                        • Letras maiúsculas
-                      </li>
-                      <li
-                        className={`${/\d/.test(password || "") ? "text-emerald-700" : "text-slate-500"}`}
-                      >
-                        • Números
-                      </li>
-                    </ul>
+                    <p className={password?.length >= 8 && password.length <= 128 ? "text-emerald-700" : "text-slate-500"}>
+                      Use de 8 a 128 caracteres.
+                    </p>
                   </div>
 
                   <div className="flex gap-3 pt-4">

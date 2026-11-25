@@ -2,7 +2,7 @@ import { z } from "zod";
 import { isMunicipalAge, isValidCpf } from "./citizen-registration";
 import { normalizeCnpj } from "@/utils/input-masks";
 
-function isValidCnpj(value: string) {
+export function isValidCnpj(value: string) {
   const cnpj = normalizeCnpj(value);
   if (!/^[A-Z0-9]{12}[0-9]{2}$/.test(cnpj) || cnpj === cnpj[0].repeat(14)) return false;
   const digit = (weights: number[]) => {
@@ -16,8 +16,6 @@ function isValidCnpj(value: string) {
 const operatorFields = z.object({
   nome: z.string().trim().min(2, "Informe o nome completo").max(100),
   email: z.email("Informe um e-mail válido"),
-  password: z.string().min(8, "Use no mínimo 8 caracteres").max(128),
-  confirmPassword: z.string(),
   cpf: z.string().refine(isValidCpf, "CPF inválido"),
   dataNascimento: z.string().refine(
     (value) => isMunicipalAge(value.split("/").reverse().join("-")),
@@ -28,12 +26,11 @@ const operatorFields = z.object({
   cidade: z.string().trim().min(2, "Informe a cidade"),
   estado: z.string().regex(/^[A-Za-z]{2}$/, "Use a sigla com 2 letras"),
   telefone: z.string().regex(/^\(\d{2}\) \d{4,5}-\d{4}$/, "Telefone inválido"),
-  termsAccepted: z.boolean().refine(Boolean, "Confirme o aceite dos termos"),
 });
 
 export const newAdminSchema = operatorFields.extend({
   cnpj: z.string(),
-}).refine((data) => data.password === data.confirmPassword, { path: ["confirmPassword"], message: "As senhas não conferem" });
+});
 
 export type NewAdminInput = z.input<typeof newAdminSchema>;
 

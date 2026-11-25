@@ -2,13 +2,16 @@
 
 import { useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Coins, House, LogOut, Menu, Recycle, UserRound, X } from "lucide-react";
+import { ArrowRight, Coins, House } from "lucide-react";
+import { getStoredAvatarUrl, getStoredUserName } from "@/app/service/api/auth-session";
 import { authService } from "@/app/service/api/authService";
 import { demoCpf, demoEnabled } from "@/app/service/api/demo-config";
 import { apiError, http } from "@/app/service/api/http";
 import { ProfilePage } from "@/components/screens/shared/profile";
 import { FormInput } from "@/components/ui/form-input";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { PanelHeader, panelNavItemClass } from "@/components/ui/panel-header";
+import { useApiResource } from "@/app/service/api/use-api-resource";
+import type { AccountProfile } from "@/components/screens/shared/profile/profile-details";
 import { inputMasks } from "@/utils/input-masks";
 import { isValidCpf } from "@/validation/citizen-registration";
 
@@ -18,13 +21,15 @@ const format = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
 const sections = [
   { id: "home", label: "Início", icon: House },
   { id: "credit", label: "Adicionar ecocoins", icon: Coins },
-  { id: "profile", label: "Perfil", icon: UserRound },
 ] as const;
 
-export default function CooperativeHome() {
+export default function CooperativeHome({ openProfile = false }: { openProfile?: boolean }) {
   const router = useRouter();
-  const [tab, setTab] = useState<(typeof sections)[number]["id"]>("home");
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [tab, setTab] = useState<(typeof sections)[number]["id"] | "profile">(openProfile ? "profile" : "home");
+  const [profileRefresh, setProfileRefresh] = useState(0);
+  const account = useApiResource<AccountProfile>("account/profile", profileRefresh);
+  const [savedProfile, setSavedProfile] = useState<AccountProfile>();
+  const profile = savedProfile ?? account?.data;
   const [cpf, setCpf] = useState("");
   const [amount, setAmount] = useState("");
   const [error, setError] = useState("");
@@ -32,13 +37,14 @@ export default function CooperativeHome() {
   const [receipt, setReceipt] = useState<(CreditReceipt & { cpf: string; amount: string }) | null>(null);
   const attempt = useRef<{ cpf: string; amount: string; key: string } | null>(null);
   const inFlight = useRef(false);
+  const value = amount.trim().replace(",", ".");
+  const canCredit = isValidCpf(cpf) && /^[0-9]{1,10}([.][0-9]{1,2})?$/.test(value) && Number(value) > 0;
 
   async function credit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (inFlight.current) return;
     const residentCpf = cpf.replace(/[^0-9]/g, "");
-    const value = amount.trim().replace(",", ".");
-    if (!isValidCpf(residentCpf) || !/^[0-9]{1,10}([.][0-9]{1,2})?$/.test(value) || Number(value) <= 0) {
+    if (!canCredit) {
       setError("Informe um CPF válido e um valor positivo com até duas casas decimais.");
       return;
     }
@@ -69,47 +75,21 @@ export default function CooperativeHome() {
   }
 
   return (
-    <div className="min-h-screen text-slate-900 dark:text-slate-200 lg:grid lg:grid-cols-[17rem_minmax(0,1fr)]">
-      <aside className="flex flex-col border-b border-slate-200 bg-white px-4 py-4 lg:sticky lg:top-0 lg:h-dvh lg:border-r lg:border-b-0 lg:px-5 lg:py-6">
-        <div className="flex items-center gap-3">
-          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-emerald-700 text-white">
-            <Recycle size={22} aria-hidden="true" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="font-bold">ReciclaOnline</p>
-            <p className="text-sm text-slate-600">Cooperativa</p>
-          </div>
-          <button type="button" aria-expanded={menuOpen} aria-controls="cooperative-menu" aria-label={menuOpen ? "Fechar menu" : "Abrir menu"}
-            className="grid size-10 place-items-center rounded-xl border border-slate-200 lg:hidden"
-            onClick={() => setMenuOpen(!menuOpen)}>
-            {menuOpen ? <X size={20} /> : <Menu size={20} />}
+    <div className="product-workspace min-h-screen text-slate-900 dark:text-slate-100">
+      <PanelHeader area="Cooperativa" name={profile?.name || getStoredUserName()} photo={profile?.profilePhoto ?? getStoredAvatarUrl()}
+        profileActive={tab === "profile"} profile={{ onClick: () => setTab("profile") }}
+        logoutDisabled={busy} onLogout={async () => {
+          await authService.logout();
+          router.replace("/Auth/Login");
+        }}>
+        {sections.map(({ id, label, icon: Icon }) => (
+          <button key={id} type="button" aria-current={tab === id ? "page" : undefined}
+            onClick={() => setTab(id)} className={panelNavItemClass(tab === id)}>
+            <Icon size={17} aria-hidden="true" />{label}
           </button>
-        </div>
-        <div id="cooperative-menu" className={`mt-5 flex-1 flex-col gap-4 lg:mt-8 lg:flex ${menuOpen ? "flex" : "hidden"}`}>
-          <nav aria-label="Cooperativa" className="grid gap-1">
-            {sections.map(({ id, label, icon: Icon }) => (
-              <button key={id} type="button" aria-current={tab === id ? "page" : undefined}
-                onClick={() => { setTab(id); setMenuOpen(false); }}
-                className={`flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold transition ${tab === id
-                  ? "bg-emerald-700 text-white"
-                  : "text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"}`}>
-                <Icon size={18} className="shrink-0" aria-hidden="true" />{label}
-              </button>
-            ))}
-          </nav>
-          <button type="button" className="mt-auto flex items-center gap-3 rounded-xl border border-slate-200 px-3 py-3 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60 dark:hover:bg-slate-800" disabled={busy} onClick={async () => {
-            await authService.logout();
-            router.replace("/Auth/Login");
-          }}>
-            <LogOut size={18} aria-hidden="true" />Sair
-          </button>
-        </div>
-      </aside>
-      <main className="mx-auto w-full max-w-7xl min-w-0 px-4 py-6 sm:px-8 lg:py-9">
-        <header className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-5">
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Painel da Cooperativa</h1>
-          <ThemeToggle />
-        </header>
+        ))}
+      </PanelHeader>
+      <main aria-label="Painel da Cooperativa" className="mx-auto w-full max-w-7xl min-w-0 px-4 py-6 sm:px-8 lg:py-9">
         {tab === "home" && (
           <section aria-labelledby="service-heading" className="space-y-6">
             <div>
@@ -146,7 +126,7 @@ export default function CooperativeHome() {
               <FormInput id="credit-cpf" label="CPF do munícipe" value={cpf} onChange={(event) => setCpf(inputMasks.cpf(event.target.value))} placeholder="000.000.000-00" inputMode="numeric" disabled={busy} required />
               <FormInput id="credit-amount" label="Quantidade de ecocoins" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="0,00" inputMode="decimal" disabled={busy} required />
               {error && <p role="alert" className="text-sm text-red-700 dark:text-red-300">{error}</p>}
-              <button className={button} disabled={busy}>{busy ? "Registrando..." : "Confirmar crédito"}</button>
+              <button className={button} disabled={busy || !canCredit}>{busy ? "Registrando..." : "Confirmar crédito"}</button>
             </form>
             {receipt && (
               <section aria-live="polite" className="space-y-3 rounded-3xl border border-emerald-200 bg-white p-6">
@@ -162,7 +142,10 @@ export default function CooperativeHome() {
             )}
           </section>
         )}
-        {tab === "profile" && <ProfilePage roleLabel="Cooperativa" />}
+        {tab === "profile" && (
+          <ProfilePage roleLabel="Cooperativa" onBack={() => setTab("home")} onProfileSaved={setSavedProfile}
+            accountResource={{ data: profile, error: account?.error, retry: () => setProfileRefresh((value) => value + 1) }} />
+        )}
       </main>
     </div>
   );

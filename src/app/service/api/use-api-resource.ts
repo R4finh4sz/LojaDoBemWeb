@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { apiError, http } from "./http";
 
-export function useApiResource<T>(url: string, refresh = 0) {
+export function useApiResource<T>(url: string | null, refresh = 0) {
   const [result, setResult] = useState<{ url: string; refresh: number; data?: T; error?: string }>();
   useEffect(() => {
+    if (!url) return;
     const controller = new AbortController();
     http.get<T>(url, { signal: controller.signal }).then(({ data }) => {
       if (!controller.signal.aborted) setResult({ url, refresh, data });

@@ -4,6 +4,6 @@ export const metadata = {
   title: "Prefeitura - ReciclaOnline",
 };
 
-export default function PrefeituraPage() {
-  return <AdminHome />;
+export default async function PrefeituraPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+  return <AdminHome openProfile={(await searchParams).tab === "profile"} />;
 }

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { CheckSquare, Square } from "lucide-react";
 
 import logoImage from "@/assets/Images/LogoImage.png";
+import { getRoleHomePath, getTokenRole, isJwtValid, storeAuthSession } from "@/app/service/api/auth-session";
 import { authService } from "@/app/service/api/authService";
 import { demoAccounts, demoEnabled, demoPassword } from "@/app/service/api/demo-config";
 import { apiError } from "@/app/service/api/http";
@@ -27,8 +28,24 @@ export const LoginPage = () => {
   const onSubmit = async (data: LoginInput) => {
     setLoading(true);
     try {
-      const { challengeId } = await authService.login({ email: data.email, password: data.password });
-      sessionStorage.setItem("loginChallenge", JSON.stringify({ challengeId, email: data.email, remember }));
+      const result = await authService.login({ email: data.email, password: data.password });
+      sessionStorage.removeItem("loginChallenge");
+      sessionStorage.removeItem("firstLoginToken");
+      if (result.twoFactorRequired === false) {
+        const role = getTokenRole(result.token);
+        if (!role || !isJwtValid(result.token)) {
+          showError("O perfil desta conta não tem acesso ao painel web ou a sessão é inválida.");
+          return;
+        }
+        storeAuthSession(result.token, data.email, remember);
+        router.replace(getRoleHomePath(role));
+        return;
+      }
+      if (!result.challengeId) {
+        showError("Não foi possível iniciar a verificação em duas etapas.");
+        return;
+      }
+      sessionStorage.setItem("loginChallenge", JSON.stringify({ challengeId: result.challengeId, email: data.email, remember }));
       router.push("/Auth/VerifyCode");
     } catch (error) {
       showError(apiError(error, "Não foi possível entrar."));
